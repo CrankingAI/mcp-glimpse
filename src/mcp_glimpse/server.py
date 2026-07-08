@@ -12,12 +12,14 @@ Wire-format contract (do not break):
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 
 from mcp.server.fastmcp import Context, FastMCP
 from mcp.server.transport_security import TransportSecuritySettings
-from mcp.types import ToolAnnotations
+from mcp.types import Completion, CompletionArgument, PromptReference, ToolAnnotations
+from pydantic import BaseModel, Field
 from starlette.requests import Request
 from starlette.responses import JSONResponse, PlainTextResponse
 
@@ -26,6 +28,18 @@ from .analyzer import analyze
 from .feedback import FeedbackStore, create_feedback_store
 from .model import GlimpseReport
 from .parser import parse
+from .primitives import best_effort, client_supports, fetch_roots, narrate
+
+# Elicitation confirm schema (one boolean field) — used to confirm a feedback write.
+class _ConfirmSchema(BaseModel):
+    confirm: bool = Field(default=False, description="Confirm to record this feedback now?")
+
+
+# Argument-completion options for the deep_tool_audit prompt's `focus` arg.
+_AUDIT_FOCUS_OPTIONS = [
+    "annotations", "danger", "duplicates", "injection", "exfiltration",
+    "network egress", "unannotated", "shadowing",
+]
 
 logger = logging.getLogger("mcp_glimpse")
 
@@ -117,16 +131,36 @@ def build_server(feedback: FeedbackStore | None = None) -> FastMCP:
         meta=_TOOL_UI_META,
         structured_output=False,
     )
-    def introspect_mcp_context(ctx: Context, snapshot_json: str | None = None) -> str:
+    async def introspect_mcp_context(
+        ctx: Context, snapshot_json: str | dict | None = None
+    ) -> str:
+        # Accept either a JSON string or an already-parsed object: FastMCP pre-parses any
+        # JSON-looking string argument into a dict before it reaches the tool, so a str-only
+        # type would reject the natural input (an agent passing the JSON object). Normalize.
+        if isinstance(snapshot_json, (dict, list)):
+            snapshot_json = json.dumps(snapshot_json)
+        # Logging + progress are demonstrators (server->client) — best-effort, never blocking.
+        await best_effort(ctx.info, "mcp-glimpse: analyzing your MCP context")
+        await best_effort(ctx.report_progress, 0.15, 1.0, "parsing snapshot")
         parsed = parse(snapshot_json)
         conn = connection.observe(ctx)
+        conn.roots = await fetch_roots(ctx)  # roots/list demonstrator (degrades to [])
+        await best_effort(ctx.report_progress, 0.55, 1.0, "computing analysis")
         analysis = analyze(parsed.snapshot, conn)
+        summary_line = (
+            f"{analysis.total_tools} tools across {analysis.total_servers} servers; "
+            f"{analysis.dangerous_tool_count} flagged dangerous; "
+            f"{analysis.annotated_tool_count}/{analysis.total_tools} annotated."
+        )
+        narrative = await narrate(ctx, summary_line)  # sampling demonstrator (degrades to None)
+        await best_effort(ctx.report_progress, 1.0, 1.0, "done")
         logger.info(
-            "introspect_mcp_context: agentTools=%s serverTools=%s servers=%s warnings=%s",
+            "introspect_mcp_context: agentTools=%s serverTools=%s warnings=%s narrated=%s roots=%s",
             analysis.total_tools,
             analysis.vantage_gap.server_sees,
-            analysis.total_servers,
             len(parsed.warnings),
+            narrative is not None,
+            len(conn.roots),
         )
         report = GlimpseReport(
             source="introspect_mcp_context",
@@ -134,6 +168,7 @@ def build_server(feedback: FeedbackStore | None = None) -> FastMCP:
             snapshot=parsed.snapshot,
             connection=conn,
             analysis=analysis,
+            narrative=narrative,
         )
         return report.to_wire_json()
 
@@ -149,14 +184,34 @@ def build_server(feedback: FeedbackStore | None = None) -> FastMCP:
         ),
         structured_output=False,
     )
-    def submit_feedback(
+    async def submit_feedback(
+        ctx: Context,
         kind: str,
         summary: str,
         detail: str | None = None,
         context: str | None = None,
     ) -> dict[str, str]:
         logger.info("submit_feedback: kind=%s", kind)
-        return store.record(kind, summary, detail, context)
+        # Elicitation demonstrator: confirm before writing when the client supports it;
+        # degrade to record-unconfirmed otherwise (folds in mcp-lens-aspnet's confirm_and_note).
+        if client_supports(ctx, "elicitation"):
+            try:
+                result = await ctx.elicit(
+                    f'Record this {kind}: "{(summary or "")[:140]}" now?', _ConfirmSchema
+                )
+                action = getattr(result, "action", None)
+                data = getattr(result, "data", None)
+                confirmed = action == "accept" and data is not None and getattr(data, "confirm", False)
+                if not confirmed:
+                    return {"id": "", "status": f"not recorded (elicitation: {action})", "elicitation": "declined"}
+                recorded = dict(store.record(kind, summary, detail, context))
+                recorded["elicitation"] = "confirmed"
+                return recorded
+            except Exception:
+                pass  # elicitation failed mid-call — degrade to unconfirmed record, never lose it
+        recorded = dict(store.record(kind, summary, detail, context))
+        recorded["elicitation"] = "unconfirmed"
+        return recorded
 
     # --- Prompts -------------------------------------------------------------------------
 
@@ -298,5 +353,18 @@ def build_server(feedback: FeedbackStore | None = None) -> FastMCP:
     @mcp.custom_route("/version", methods=["GET"])
     async def version(_request: Request) -> JSONResponse:
         return JSONResponse({"name": "mcp-glimpse", "version": manifest.version()})
+
+    # --- Completions ---------------------------------------------------------------------
+
+    @mcp.completion()
+    async def complete(
+        ref: PromptReference, argument: CompletionArgument, _context: object
+    ) -> Completion | None:
+        # Argument completion for the deep_tool_audit prompt's `focus` value.
+        if getattr(ref, "name", None) == "deep_tool_audit" and argument.name == "focus":
+            prefix = (argument.value or "").lower()
+            values = [o for o in _AUDIT_FOCUS_OPTIONS if o.lower().startswith(prefix)]
+            return Completion(values=values, total=len(values), hasMore=False)
+        return None
 
     return mcp
