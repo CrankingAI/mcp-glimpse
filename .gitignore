@@ -11,3 +11,10 @@ obj/
 
 # OS
 .DS_Store
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+app/dist/
