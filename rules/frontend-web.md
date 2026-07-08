@@ -118,7 +118,7 @@ replace the generated literals, never keep them:
 
 ```css
 @import "tailwindcss";
-@import "@CrankingAI/tokens/theme.css";   /* @theme + [data-theme="dark"] override */
+@import "@EffAz/tokens/theme.css";   /* @theme + [data-theme="dark"] override */
 
 :root {
   --background:  var(--color-background);

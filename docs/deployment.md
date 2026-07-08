@@ -1,7 +1,7 @@
 # Deployment
 
 `azd` + Bicep (AVM modules) + GitHub Actions on a **tag push**. One environment,
-azd env `CrankingAI-prod` (default `EffAz-prod`). Staging is a slot/revision
+azd env `EffAz-prod` (default `EffAz-prod`). Staging is a slot/revision
 *inside* it, never a separate build. **Promotion = build once, promote the same artifact** — never
 rebuild per stage.
 
@@ -37,7 +37,7 @@ source of truth — see [versioning](versioning.md).
 Tokenized CAF scheme (greppable). Defaults: ORG=`EffAz`, ENV=`prod`;
 PROJECT is the workload name.
 
-- **azd env:** `CrankingAI-prod` (default `EffAz-prod`) — one name shared by the
+- **azd env:** `EffAz-prod` (default `EffAz-prod`) — one name shared by the
   azd environment and the resource-name suffix. (Until 2026-07-05 the azd env
   was a special-cased capital-R `EffAz-Run`; field use showed the two-name
   scheme invited conflation, so the ENV token is now the single source.)

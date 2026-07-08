@@ -20,7 +20,7 @@ it in Preview) and the seeding/reboot skills read and write.
 | Agentic monetization | none | [agentic-commerce](docs/agentic-commerce.md) | free, public tool |
 | Cloud / provider | azure (plus cloudflare) | [deployment](docs/deployment.md) | ACA + Static Web Apps behind a Cloudflare proxied edge |
 | Edge | cloudflare | [edge](docs/edge.md) | proxied edge + logging Worker in front of `www` and `mcp` |
-| Environments & naming | ORG=`CrankingAI` ENV=`prod` PROJECT=`glimpse` region=`eastus` domain=`mcpglimpse.com` | [deployment](docs/deployment.md) | naming scheme; apex → www canonical ([ADR 0002](docs/adr/0002-www-canonical-apex-redirects-to-www.md)) |
+| Environments & naming | ORG=`EffAz` ENV=`prod` PROJECT=`glimpse` region=`eastus` domain=`mcpglimpse.com` | [deployment](docs/deployment.md) | naming scheme; apex → www canonical ([ADR 0002](docs/adr/0002-www-canonical-apex-redirects-to-www.md)) |
 
 ## Backend topology
 

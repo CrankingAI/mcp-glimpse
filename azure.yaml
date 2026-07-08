@@ -2,7 +2,7 @@
 # Schema: https://aka.ms/azure-dev/azure.yaml
 #
 # Naming follows the kit's CAF scheme (docs/deployment.md):
-#   azd env       -> CrankingAI-prod            (default EffAz-prod)
+#   azd env       -> EffAz-prod            (default EffAz-prod)
 #   subscription  -> EffAz-Prod by default      (AZURE_SUBSCRIPTION_ID at azd env new)
 #   resource group-> rg-glimpse-prod     (created in infra/main.bicep)
 #

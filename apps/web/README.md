@@ -15,7 +15,7 @@ placeholder before the slot goes live — an unscaffolded slot must never ship.
 
 ## What this shell must provide
 
-- Imports `@CrankingAI/tokens` — Tailwind v4 `@theme` is derived from the shared
+- Imports `@EffAz/tokens` — Tailwind v4 `@theme` is derived from the shared
   `tokens.json`, so this shell and `apps/app` share one design system and cannot
   drift.
 - Static-by-construction output for the public surface.

@@ -172,7 +172,7 @@ Captured after the initial plan; these are binding for the phases noted.
   (App) and **Phase 9** (www) build *within* it — the Phase 4 judge panel explores options inside Paper &
   Proof, not a new system. Consume via the token pipeline: `tokens.json → theme.css` (`packages/tokens/build.mjs`,
   supports light + `[data-theme="dark"]`, alias refs, motion/shadow/radii), imported as
-  `@import "@CrankingAI/tokens/theme.css"` and bound at the **single shadcn `:root` seam** (point each
+  `@import "@EffAz/tokens/theme.css"` and bound at the **single shadcn `:root` seam** (point each
   shadcn var at a token var — `--primary`=ink not green, `--ring`=green; replace the generated literals).
   Per-repo visual changes go through the `design-consultation` skill and are recorded in DESIGN.md's
   Decisions Log — never silent drift; the **token-drift gate** (`gate_token_drift`, runs in `check.sh` once

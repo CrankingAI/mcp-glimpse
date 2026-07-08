@@ -12,7 +12,7 @@ placeholder before the slot goes live — an unscaffolded slot must never ship.
 
 ## What this SPA must provide
 
-- Imports `@CrankingAI/tokens` — shares the same `tokens.json` / Tailwind v4 design
+- Imports `@EffAz/tokens` — shares the same `tokens.json` / Tailwind v4 design
   system as `apps/web`.
 - `noindex`: `X-Robots-Tag: noindex, nofollow` on `/app/*` (and not also disallowed
   in `robots.txt`, or the header is never seen).

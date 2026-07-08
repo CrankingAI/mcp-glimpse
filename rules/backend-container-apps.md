@@ -25,7 +25,7 @@ This file is self-contained: it does not depend on sibling `rules/backend-*.md`.
 
 ## Naming (CAF, tokenized)
 
-- azd env: `CrankingAI-prod` (default `EffAz-prod`).
+- azd env: `EffAz-prod` (default `EffAz-prod`).
 - Resource group: `rg-glimpse-prod`.
 - Container App: `app-glimpse-prod`; App Insights `appi-glimpse-prod`;
   App Config `appcs-glimpse-prod`; Key Vault `kv-glimpse-prod`;

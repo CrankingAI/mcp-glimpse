@@ -1,4 +1,4 @@
-# @CrankingAI/tokens
+# @EffAz/tokens
 
 Shared design tokens for the workspace. **`tokens.json` (W3C DTCG format) is the
 canonical source of truth / contract.** Both apps import this package so the public
@@ -9,8 +9,8 @@ Astro shell and the Vite React SPA cannot drift.
 - `tokens.json` — canonical DTCG tokens (color, font, spacing). Edit here only.
 - `theme.css` — derived Tailwind v4 `@theme` block (a build artifact).
 
-Consumers import `@CrankingAI/tokens/theme.css` (Tailwind v4) or read
-`@CrankingAI/tokens/tokens.json` directly (e.g. an OG-image generator or RN theme).
+Consumers import `@EffAz/tokens/theme.css` (Tailwind v4) or read
+`@EffAz/tokens/tokens.json` directly (e.g. an OG-image generator or RN theme).
 
 ## How the Tailwind v4 preset is derived
 
@@ -32,7 +32,7 @@ utilities (`bg-brand-primary`, `font-sans`, `p-gap`):
 
 ```css
 @import "tailwindcss";
-@import "@CrankingAI/tokens/theme.css";
+@import "@EffAz/tokens/theme.css";
 ```
 
 ## Producing the tokens
@@ -46,7 +46,7 @@ the producer is replaceable.
 **gitignored, never committed**. Regenerate it with:
 
 ```bash
-pnpm --filter @CrankingAI/tokens build
+pnpm --filter @EffAz/tokens build
 ```
 
 ### Reserved-key auto-remap

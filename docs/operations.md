@@ -71,7 +71,7 @@ design defect — flag it, do not ship around it.
 
 ## The operational to-do list is created with the environment
 
-Provisioning the environment (`azd up` into `CrankingAI-prod`) MUST generate an
+Provisioning the environment (`azd up` into `EffAz-prod`) MUST generate an
 **operational to-do checklist** alongside the resources. The environment is not
 "done" when the resources exist; it is done when this list is confirmed. The
 checklist enumerates the operational items that a fresh `rg-glimpse-prod`

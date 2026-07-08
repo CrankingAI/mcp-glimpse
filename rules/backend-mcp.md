@@ -192,7 +192,7 @@ public async Task<FeedbackAck> SubmitFeedback(
 
 ## Naming (CAF, tokenized)
 
-- azd env: `CrankingAI-prod` (default `EffAz-prod`).
+- azd env: `EffAz-prod` (default `EffAz-prod`).
 - Resource group: `rg-glimpse-prod`.
 - Host (ACA): `app-glimpse-prod`; App Insights `appi-glimpse-prod`;
   App Config `appcs-glimpse-prod`; Key Vault `kv-glimpse-prod`;
