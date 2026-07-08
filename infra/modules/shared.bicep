@@ -167,4 +167,5 @@ output appConfigName string = appConfig.outputs.name
 output appConfigEndpoint string = appConfig.outputs.endpoint
 output managedIdentityClientId string = managedIdentity.outputs.clientId
 output managedIdentityResourceId string = managedIdentity.outputs.resourceId
+output managedIdentityPrincipalId string = managedIdentity.outputs.principalId
 output storageAccountName string = storage.outputs.name

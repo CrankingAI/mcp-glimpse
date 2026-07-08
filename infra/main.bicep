@@ -41,6 +41,18 @@ param tags object = {
   'managed-by': 'azd'
 }
 
+@description('Full container image reference for the MCP server (empty on first provision).')
+param containerImage string = ''
+
+@description('Custom domain for the MCP host (empty = default ACA FQDN only until DNS/cert are set).')
+param mcpCustomDomain string = ''
+
+@description('Shared Azure Container Registry name (holds the mcp-glimpse image).')
+param acrName string = 'crankingaiacr'
+
+@description('Resource group of the shared ACR (for the cross-RG AcrPull grant).')
+param acrResourceGroup string = 'crankingai-rg'
+
 // ---- Derived names ----------------------------------------------------------
 
 var rgName = 'rg-${project}-${env}'
@@ -68,6 +80,40 @@ module shared 'modules/shared.bicep' = {
     env: env
     tags: tags
     globalSuffix: globalSuffix
+  }
+}
+
+// ---- MCP server on Azure Container Apps -------------------------------------
+// Only deploy the app once an image reference is supplied (containerImage). The first
+// `az deployment` may pass a placeholder; the tag-push pipeline passes the real image.
+
+module aca 'app/aca.bicep' = if (!empty(containerImage)) {
+  scope: rg
+  name: 'aca-${env}'
+  params: {
+    location: location
+    tags: tags
+    project: project
+    env: env
+    containerImage: containerImage
+    managedIdentityResourceId: shared.outputs.managedIdentityResourceId
+    managedIdentityClientId: shared.outputs.managedIdentityClientId
+    managedIdentityPrincipalId: shared.outputs.managedIdentityPrincipalId
+    storageAccountName: shared.outputs.storageAccountName
+    logAnalyticsWorkspaceId: shared.outputs.logAnalyticsWorkspaceId
+    appInsightsConnectionString: shared.outputs.appInsightsConnectionString
+    acrLoginServer: '${acrName}.azurecr.io'
+    customDomain: mcpCustomDomain
+  }
+}
+
+// Cross-RG AcrPull for the app's managed identity on the shared registry.
+module acrPull 'app/acr-pull.bicep' = {
+  scope: resourceGroup(acrResourceGroup)
+  name: 'acrpull-${env}'
+  params: {
+    acrName: acrName
+    principalId: shared.outputs.managedIdentityPrincipalId
   }
 }
 
@@ -115,3 +161,7 @@ output AZURE_APP_CONFIG_ENDPOINT string = shared.outputs.appConfigEndpoint
 output AZURE_CLIENT_ID string = shared.outputs.managedIdentityClientId
 output AZURE_MANAGED_IDENTITY_ID string = shared.outputs.managedIdentityResourceId
 output AZURE_STORAGE_ACCOUNT_NAME string = shared.outputs.storageAccountName
+
+output MCP_FQDN string = !empty(containerImage) ? aca.outputs.fqdn : ''
+output MCP_CUSTOM_DOMAIN_VERIFICATION_ID string = !empty(containerImage) ? aca.outputs.customDomainVerificationId : ''
+output MCP_DEFAULT_DOMAIN string = !empty(containerImage) ? aca.outputs.defaultDomain : ''
