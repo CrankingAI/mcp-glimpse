@@ -197,10 +197,14 @@ Captured after the initial plan; these are binding for the phases noted.
 - **Script hygiene** (edition-5 §14c): quote + `--`-terminate pathspecs for Astro bracketed routes
   (`git add -- 'apps/web/src/pages/[spdx].astro'`) and **assert `git status --porcelain` empty after any
   scripted commit** before declaring success. (Already applied to the Phase 0/1 commits here.)
-- **Kit gap noted for feedback:** the seed's `check.sh` has **no Python lint/test gate** (it covers .NET,
-  pnpm/JS, bicep, markdown). mcp-glimpse's Python suite runs via `.github/workflows/ci.yml` (pytest) instead.
-  Stage a `MORE-mcp-glimpse-FEEDBACK.md` item (Phase 12): `check.sh` should grow a Python gate
-  (`uv run pytest` / `ruff`) for Python-hosting repos.
+- **Kit gaps noted for feedback** (stage in `MORE-mcp-glimpse-FEEDBACK.md`, Phase 12):
+  (1) the seed's `check.sh` has **no Python lint/test gate** (it covers .NET, pnpm/JS, bicep, markdown);
+  mcp-glimpse's Python suite runs via `.github/workflows/ci.yml` (pytest) instead — `check.sh` should grow a
+  Python gate (`uv run pytest` / `ruff`) for Python-hosting repos.
+  (2) the `check.sh` markdown gate globs `**/*.md` and **lints installed-dependency markdown under `.venv/`**
+  (e.g. `starlette`/`httpx` `LICENSE.md` trip MD041), failing a Python repo's gate for files it doesn't own.
+  Worked around here with a repo-local `.markdownlint-cli2.jsonc` `ignores` for `.venv/`; the seed should
+  ship that ignore (or exclude `.venv` in the `md_lint` glob).
 
 ---
 
