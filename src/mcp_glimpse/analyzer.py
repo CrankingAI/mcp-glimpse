@@ -6,8 +6,16 @@ No I/O, no FastMCP, no network. The consistency lens uses a word-boundary tokeni
 from __future__ import annotations
 
 import re
+from collections import Counter
 
-from mcp_glimpse.model import ToolRef
+from mcp_glimpse.model import (
+    Analysis,
+    ConnectionFacts,
+    GlimpseSnapshot,
+    LargestServer,
+    ToolRef,
+    VantageGap,
+)
 
 _CAMEL_BOUNDARY = re.compile(r"(?<=[a-z0-9])(?=[A-Z])")
 _SEPARATORS = re.compile(r"[ _\-./:]+")
@@ -43,3 +51,45 @@ def _find_inconsistencies(tools: list[ToolRef]) -> list[str]:
                 f"{tool.name}: declares readOnlyHint but its name reads like a write"
             )
     return out
+
+
+def analyze(snapshot: GlimpseSnapshot | None, connection: ConnectionFacts) -> Analysis:
+    tools = snapshot.tools if snapshot else []
+    servers = snapshot.servers if snapshot else []
+
+    tools_by_server: Counter[str] = Counter()
+    for tool in tools:
+        if tool.server:
+            tools_by_server[tool.server] += 1
+
+    largest: LargestServer | None = None
+    if tools_by_server:
+        name, count = tools_by_server.most_common(1)[0]
+        largest = LargestServer(name=name, tool_count=count)
+
+    name_counts: Counter[str] = Counter(tool.name for tool in tools)
+    duplicates = sorted(name for name, count in name_counts.items() if count > 1)
+
+    if servers:
+        total_servers = len(servers)
+    else:
+        total_servers = len({tool.server for tool in tools if tool.server})
+
+    annotated = sum(1 for tool in tools if tool.has_annotations)
+
+    return Analysis(
+        total_tools=len(tools),
+        total_servers=total_servers,
+        largest_server=largest,
+        servers_offering_prompts=sum(1 for s in servers if s.offers_prompts),
+        servers_offering_resources=sum(1 for s in servers if s.offers_resources),
+        duplicate_tool_names=duplicates,
+        dangerous_tool_count=sum(1 for tool in tools if tool.is_dangerous),
+        annotated_tool_count=annotated,
+        unannotated_tool_count=len(tools) - annotated,
+        inconsistencies=_find_inconsistencies(tools),
+        vantage_gap=VantageGap(
+            server_sees=len(connection.server_tools),
+            agent_sees=len(tools),
+        ),
+    )
