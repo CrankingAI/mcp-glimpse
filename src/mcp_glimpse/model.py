@@ -132,6 +132,26 @@ class VantageGap(CamelModel):
     agent_sees: int = 0
 
 
+class ServerCost(CamelModel):
+    name: str | None = None
+    estimated_tokens: int = 0
+
+
+class ContextCost(CamelModel):
+    estimated_tokens_low: int = 0
+    estimated_tokens_high: int = 0
+    window_total_tokens: int | None = None
+    per_server: list[ServerCost] = []
+    model_family: str | None = None
+    method: str | None = None
+
+
+class PoisoningFinding(CamelModel):
+    tool: str
+    category: str
+    detail: str
+
+
 class Analysis(CamelModel):
     total_tools: int = 0
     total_servers: int = 0
@@ -144,6 +164,8 @@ class Analysis(CamelModel):
     unannotated_tool_count: int = 0
     inconsistencies: list[str] = []
     vantage_gap: VantageGap | None = None
+    context_cost: ContextCost | None = None
+    tool_poisoning: list[PoisoningFinding] = []
 
 
 class GlimpseReport(CamelModel):
