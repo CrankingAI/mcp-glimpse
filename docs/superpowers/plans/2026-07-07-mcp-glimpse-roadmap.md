@@ -160,6 +160,50 @@ Phase 4 leaves room in the tab bar; GitHub-bridge design — Phase 6 fast-follow
 
 ---
 
+## Kit updates folded in (meta-agent-md edition-5 + Paper & Proof, seeded at v0.7.1)
+
+Captured after the initial plan; these are binding for the phases noted.
+
+- **Design system is the fleet default "Paper & Proof" (`packages/tokens/DESIGN.md`), not from-scratch.**
+  Editorial-instrument aesthetic: warm paper (light "Paper" default) + warm ink + one rationed **gate-green
+  accent that marks truth** (links, verified marks, focus), Instrument Serif/Sans + JetBrains Mono, hairline
+  rules over boxes, signature **verify-tick** (a hairline that ticks gate-green on confirm; honor
+  `prefers-reduced-motion`). This maps onto mcp-glimpse's confirmed/annotated/verified moments. **Phase 4**
+  (App) and **Phase 9** (www) build *within* it — the Phase 4 judge panel explores options inside Paper &
+  Proof, not a new system. Consume via the token pipeline: `tokens.json → theme.css` (`packages/tokens/build.mjs`,
+  supports light + `[data-theme="dark"]`, alias refs, motion/shadow/radii), imported as
+  `@import "@CrankingAI/tokens/theme.css"` and bound at the **single shadcn `:root` seam** (point each
+  shadcn var at a token var — `--primary`=ink not green, `--ring`=green; replace the generated literals).
+  Per-repo visual changes go through the `design-consultation` skill and are recorded in DESIGN.md's
+  Decisions Log — never silent drift; the **token-drift gate** (`gate_token_drift`, runs in `check.sh` once
+  `apps/web` is scaffolded) fails on any hardcoded literal in `:root`.
+- **`check.sh` now runs `pnpm -r --if-present test` after the web build** (edition-5): build-output guard
+  tests read `dist/`. So **Phase 4/9** must ship a passing Vitest/build-output suite (asserting page counts,
+  JSON-LD `@type` presence, corpus markers), or the gate is a no-op that hides drift. (Locally the whole Web
+  gate self-skips until `pnpm` is installed.)
+- **ACA custom-domain cert = CNAME validation on a subdomain; never TXT** (edition-5 §14d): TXT is the
+  apex-behind-a-flattening-proxy escape hatch only; `--validation-method TXT` on `mcp.mcpglimpse.com` is
+  CLI-accepted, sits `Pending` ~80 min, then `Failed`, and a `Pending` cert 500s on delete. Binds **Phase 8/10**
+  (pairs with the already-chosen Cloudflare-origin-cert stance).
+- **AEO tactics are now execution-validated** (edition-5 §14b) — bind **Phase 9**: match JSON-LD `@type` to
+  page shape (`QAPage` for question-titled Learn pages; `TechArticle`+**`FAQPage` derived from structured
+  data, never hand-written**; `Dataset`/`DefinedTermSet` for reference); emit through **one `jsonLd` layout
+  slot**; any combinatorial pages use **canonical ordering only** with links derived from the route slug
+  function; **build-output guard tests** assert the corpus from `dist/`; generate `llms.txt`/`llms-full.txt`
+  from the **same structured source** as the pages.
+- **A third-party form/embed is a privacy-policy event even with zero backend change** (edition-5 §14e) —
+  **Phase 9**: if the site adds any embed collecting input, re-run the `privacy-policy-drafter` skill; a "no
+  data collected" page is then a ship-blocker.
+- **Script hygiene** (edition-5 §14c): quote + `--`-terminate pathspecs for Astro bracketed routes
+  (`git add -- 'apps/web/src/pages/[spdx].astro'`) and **assert `git status --porcelain` empty after any
+  scripted commit** before declaring success. (Already applied to the Phase 0/1 commits here.)
+- **Kit gap noted for feedback:** the seed's `check.sh` has **no Python lint/test gate** (it covers .NET,
+  pnpm/JS, bicep, markdown). mcp-glimpse's Python suite runs via `.github/workflows/ci.yml` (pytest) instead.
+  Stage a `MORE-mcp-glimpse-FEEDBACK.md` item (Phase 12): `check.sh` should grow a Python gate
+  (`uv run pytest` / `ruff`) for Python-hosting repos.
+
+---
+
 ## Repository file structure (target)
 
 Seeded from meta-agent-md `seed/` (Phase 0), then the Python app package + ACA bicep + www content are
