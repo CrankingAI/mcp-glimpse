@@ -1,0 +1,28 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json",
+  "name": "io.github.crankingai/mcp-glimpse",
+  "description": "Point your agent at itself — see every connected MCP server, tool, capability, and the wire.",
+  "version": "0.1.0",
+  "repository": {
+    "url": "https://github.com/CrankingAI/mcp-glimpse",
+    "source": "github"
+  },
+  "websiteUrl": "https://www.mcpglimpse.com",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "registryBaseUrl": "https://pypi.org",
+      "identifier": "mcp-glimpse",
+      "version": "0.1.0",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ],
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://mcp.mcpglimpse.com/mcp"
+    }
+  ]
+}

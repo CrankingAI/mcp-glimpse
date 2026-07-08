@@ -1,0 +1,50 @@
+name: deploy
+# Tag-push deploy to Azure Container Apps. Build once, push, roll a new revision, smoke.
+# Requires OIDC federated credentials on the repo (no stored Azure secret):
+#   repo secrets AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID
+# Set up with the kit's setup-deploy skill (az ad app federated-credential for
+# repo:CrankingAI/mcp-glimpse:ref:refs/tags/v*).
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve version from tag
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+
+      - name: Assert tag matches VERSION file
+        run: test "$(cat VERSION)" = "$VERSION" || { echo "tag $VERSION != VERSION $(cat VERSION)"; exit 1; }
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Build & push image (amd64, in-cloud)
+        run: |
+          az acr build --registry crankingaiacr --platform linux/amd64 \
+            --image mcp-glimpse:${VERSION} .
+
+      - name: Roll new revision
+        run: |
+          az containerapp update -g rg-glimpse-prod -n app-glimpse-prod \
+            --image crankingaiacr.azurecr.io/mcp-glimpse:${VERSION}
+
+      - name: Smoke the live artifact (/readyz + /version == tag)
+        run: |
+          FQDN=$(az containerapp show -g rg-glimpse-prod -n app-glimpse-prod \
+            --query properties.configuration.ingress.fqdn -o tsv)
+          for i in $(seq 1 30); do curl -fsS "https://$FQDN/readyz" >/dev/null && break; sleep 5; done
+          got=$(curl -fsS "https://$FQDN/version" | python3 -c 'import sys,json; print(json.load(sys.stdin)["version"])')
+          echo "deployed /version = $got (expected $VERSION)"
+          test "$got" = "$VERSION"

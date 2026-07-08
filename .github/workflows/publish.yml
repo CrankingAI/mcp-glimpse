@@ -1,0 +1,36 @@
+name: publish
+# Tag-push publish to PyPI (trusted publishing, OIDC — no long-lived token) + the MCP registry.
+# One-time setup on pypi.org: configure a Trusted Publisher for project `mcp-glimpse` pointing at
+# CrankingAI/mcp-glimpse, workflow `publish.yml`, environment `pypi`.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  pypi:
+    runs-on: ubuntu-latest
+    environment: pypi
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv build
+      - name: Publish to PyPI (trusted publishing)
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+  mcp-registry:
+    needs: pypi
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Publish server.json to the MCP registry
+        # The registry + mcp-publisher flow is new and moving — verify the download URL and the
+        # login/publish subcommands against https://registry.modelcontextprotocol.io docs at release time.
+        run: |
+          curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" \
+            | tar -xz mcp-publisher
+          ./mcp-publisher login github-oidc
+          ./mcp-publisher publish
