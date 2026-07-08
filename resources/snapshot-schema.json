@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mcp-glimpse/schemas/snapshot.json",
+  "title": "mcp-glimpse introspect_mcp_context snapshot_json",
+  "description": "The JSON object passed as the introspect_mcp_context tool's snapshot_json argument. Every field is optional; supply as much as you can determine about your own MCP/agent context.",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "model": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "exact model id, e.g. claude-opus-4-8" },
+        "displayName": { "type": "string" },
+        "provider": { "type": "string" }
+      }
+    },
+    "host": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "the client/host app" },
+        "version": { "type": "string" }
+      }
+    },
+    "clientCapabilities": {
+      "type": "object",
+      "description": "MCP capabilities your host supports. This server can detect/report them but, being stateless HTTP, cannot use sampling/elicitation/roots (they need a bidirectional session).",
+      "properties": {
+        "sampling": { "type": "boolean", "description": "server may ask the client's model to generate" },
+        "elicitation": { "type": "boolean", "description": "server may ask the user for input mid-call" },
+        "roots": { "type": "boolean", "description": "client advertises workspace roots" },
+        "rootPaths": { "type": "array", "items": { "type": "string" }, "description": "the advertised root paths, if known" }
+      }
+    },
+    "servers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "title": { "type": "string" },
+          "offersPrompts": { "type": "boolean" },
+          "offersResources": { "type": "boolean" }
+        }
+      }
+    },
+    "tools": {
+      "type": "array",
+      "description": "Every tool you can call, across ALL connected servers.",
+      "items": { "$ref": "#/$defs/tool" }
+    },
+    "contextWindow": {
+      "type": "object",
+      "properties": {
+        "usedTokens": { "type": "integer" },
+        "totalTokens": { "type": "integer" }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "properties": {
+        "cwd": { "type": "string" },
+        "date": { "type": "string" },
+        "platform": { "type": "string" },
+        "osVersion": { "type": "string" }
+      }
+    },
+    "persona": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "notes": { "type": "string" }
+      }
+    },
+    "skills": { "type": "array", "items": { "type": "string" } },
+    "notes": { "type": "string" }
+  },
+  "$defs": {
+    "tool": {
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": false,
+      "description": "A tool and its DECLARED MCP annotations. Report hints exactly as declared; omit a hint the tool does not declare. Unrecognized fields are reported as warnings, not silently dropped.",
+      "properties": {
+        "name": { "type": "string" },
+        "server": { "type": "string", "description": "which server/connector this tool comes from" },
+        "description": { "type": "string" },
+        "title": { "type": "string", "description": "the tool's annotation title, if any" },
+        "readOnlyHint": { "type": "boolean" },
+        "destructiveHint": { "type": "boolean" },
+        "idempotentHint": { "type": "boolean" },
+        "openWorldHint": { "type": "boolean" },
+        "readOnly": { "type": "boolean", "deprecated": true, "description": "deprecated alias for readOnlyHint; accepted for backward compatibility" },
+        "destructive": { "type": "boolean", "deprecated": true, "description": "deprecated alias for destructiveHint" },
+        "idempotent": { "type": "boolean", "deprecated": true, "description": "deprecated alias for idempotentHint" },
+        "openWorld": { "type": "boolean", "deprecated": true, "description": "deprecated alias for openWorldHint" }
+      }
+    }
+  }
+}

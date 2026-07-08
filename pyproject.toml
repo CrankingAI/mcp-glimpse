@@ -8,7 +8,17 @@ license = { text = "MIT" }
 authors = [{ name = "Bill Wilder", email = "codingoutloud@gmail.com" }]
 dependencies = [
     "pydantic>=2.7",
+    "mcp>=1.28",
 ]
+
+[project.optional-dependencies]
+azure = [
+    "azure-data-tables>=12.5",
+    "azure-identity>=1.17",
+]
+
+[project.scripts]
+mcp-glimpse = "mcp_glimpse.cli:main"
 
 [dependency-groups]
 dev = [
