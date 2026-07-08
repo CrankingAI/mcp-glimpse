@@ -120,6 +120,7 @@ class ConnectionFacts(CamelModel):
     server_tools: list[str] = []
     server_prompts: list[str] = []
     server_resources: list[str] = []
+    roots: list[str] = []
 
 
 class LargestServer(CamelModel):
@@ -174,6 +175,7 @@ class GlimpseReport(CamelModel):
     connection: ConnectionFacts
     analysis: Analysis
     warnings: list[str] = []
+    narrative: str | None = None  # sampling demonstrator: "your environment, in prose"
 
     def to_wire_json(self) -> str:
         return self.model_dump_json(by_alias=True, exclude_none=True)
