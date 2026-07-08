@@ -1,0 +1,21 @@
+{
+  "name": "@CrankingAI/tokens",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Shared DTCG design tokens. Canonical source of truth for both apps.",
+  "type": "module",
+  "exports": {
+    "./tokens.json": "./tokens.json",
+    "./theme.css": "./theme.css"
+  },
+  "files": [
+    "tokens.json",
+    "theme.css"
+  ],
+  "scripts": {
+    "build": "node ./build.mjs",
+    "lint": "echo \"tokens: DTCG lint runs via design-consultation skill\" && exit 0",
+    "typecheck": "echo \"tokens: no TS to check\" && exit 0",
+    "format": "echo \"tokens: formatted via root markdown/JSON tooling\" && exit 0"
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "$comment": "Seed MCP server config. Grounds agents in official docs (Microsoft Learn always; Cloudflare docs when the edge is on) so generated code is current (mid-2026 idiom), not hallucinated. Write-capable servers ship commented — uncomment deliberately per repo. Scripts + CI remain the canonical provisioning path; MCP is the interactive layer (docs/edge.md).",
+  "mcpServers": {
+    "microsoft-docs": {
+      "$comment": "Microsoft Learn docs MCP — search/fetch official .NET & Azure documentation. Remote, no local install. Always on.",
+      "type": "http",
+      "url": "https://learn.microsoft.com/api/mcp"
+    }
+    // BEGIN cloudflare-docs (removed by seed-init.sh --edge none)
+    ,
+    "cloudflare-docs": {
+      "$comment": "Cloudflare docs MCP — read-only docs search, the CF peer of microsoft-docs (Workers, rulesets, bot management). Same verify-from-docs rule.",
+      "type": "http",
+      "url": "https://docs.mcp.cloudflare.com/mcp"
+    }
+    // END cloudflare-docs
+    // "cloudflare": {
+    //   "$comment": "Cloudflare full-API MCP — 2,500+ endpoints, OAuth login. WRITE-CAPABLE (DNS, rulesets, Workers): blast radius is the whole account — uncomment deliberately, prefer the scoped scripts for provisioning (docs/edge.md).",
+    //   "type": "http",
+    //   "url": "https://mcp.cloudflare.com/mcp"
+    // },
+    // "cloudflare-observability": {
+    //   "$comment": "Cloudflare observability MCP — read-only Workers logs + analytics; runs the docs/edge.md Analytics Engine queries conversationally. Pairs with app-insights below.",
+    //   "type": "http",
+    //   "url": "https://observability.mcp.cloudflare.com/mcp"
+    // },
+    // "posthog": {
+    //   "$comment": "PostHog MCP — HogQL queries, insights, flags, errors. WRITE-CAPABLE. Uncomment when this repo adopts PostHog (docs/observability.md product analytics + the edge sink).",
+    //   "type": "http",
+    //   "url": "https://mcp.posthog.com/mcp"
+    // },
+    // "azure": {
+    //   "$comment": "Azure MCP server — query/operate live Azure resources (resource groups, Key Vault, App Config, Storage, etc.) via DefaultAzureCredential. Run `az login` first. https://github.com/Azure/azure-mcp",
+    //   "type": "stdio",
+    //   "command": "npx",
+    //   "args": ["-y", "@azure/mcp@latest", "server", "start"]
+    // },
+    // "app-insights": {
+    //   "$comment": "Application Insights / Azure Monitor MCP — run KQL against the workload's App Insights resource for deploy-window queries, failures, latency. Fill in {{APP_INSIGHTS_RESOURCE_ID}}. Pairs with the aca-deploy-verification skill.",
+    //   "type": "stdio",
+    //   "command": "npx",
+    //   "args": ["-y", "@azure/mcp@latest", "server", "start", "--namespace", "monitor"],
+    //   "env": {
+    //     "APP_INSIGHTS_RESOURCE_ID": "{{APP_INSIGHTS_RESOURCE_ID}}"
+    //   }
+    // }
+  }
+}

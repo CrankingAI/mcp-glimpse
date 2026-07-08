@@ -1,0 +1,13 @@
+---
+description: Points to AGENTS.md, the single source of truth for repo conventions.
+alwaysApply: true
+globs: ["**/*"]
+---
+
+# Cursor rules pointer
+
+`AGENTS.md` is the single source of truth for conventions in this repo. Read it
+before making changes.
+
+<!-- Note: Cursor may not transclude AGENTS.md content into context. Open
+AGENTS.md explicitly to load the canonical rules. -->

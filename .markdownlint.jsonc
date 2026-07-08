@@ -1,0 +1,23 @@
+// Markdown lint baseline for the seed kit. Canonical — do not fork per-repo.
+// VS Code: install the "DavidAnson.vscode-markdownlint" extension and it reads
+// this file automatically. CLI: `npx markdownlint-cli2 "**/*.md"`.
+// Delegates to the `markdown` skill for editing + auto-fixing violations.
+{
+  "default": true,
+
+  // Line length: prose wraps freely; we do not hard-wrap at a column.
+  "MD013": false,
+
+  // Emphasis-as-heading: allowed (some doc patterns use bold lead-ins).
+  "MD036": false,
+
+  // Table column-count strictness: off (DX > pedantry on wide tables).
+  "MD060": false,
+
+  // Duplicate headings: allowed only across different sections, never as
+  // siblings under the same parent.
+  "MD024": { "siblings_only": true },
+
+  // Every fenced code block MUST declare a language (use `text` if none fits).
+  "MD040": true
+}

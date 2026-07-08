@@ -1,0 +1,13 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+packages/tokens/theme.css
+
+# .NET
+bin/
+obj/
+
+# OS
+.DS_Store

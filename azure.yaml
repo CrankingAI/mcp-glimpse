@@ -1,0 +1,34 @@
+# azd configuration for glimpse.
+# Schema: https://aka.ms/azure-dev/azure.yaml
+#
+# Naming follows the kit's CAF scheme (docs/deployment.md):
+#   azd env       -> CrankingAI-prod            (default EffAz-prod)
+#   subscription  -> EffAz-Prod by default      (AZURE_SUBSCRIPTION_ID at azd env new)
+#   resource group-> rg-glimpse-prod     (created in infra/main.bicep)
+#
+# `azd up` runs infra/main.bicep (subscription-scoped) then deploys the services
+# below. Replace the placeholder backend service to match your chosen host
+# (see rules/backend-*.md — host(s): functions | container-apps).
+name: glimpse
+
+infra:
+  provider: bicep
+  path: infra
+  module: main
+
+# Backend = host(s) + composable interface(s) (see AGENTS.md + rules/). The block
+# below is a PLACEHOLDER for the chosen host (functions | container-apps). An MCP
+# tool-server interface (rules/backend-mcp.md) co-hosts on ACA or runs as its own
+# service — add it as an additional service when used. Pick the host that matches
+# your backend rule and delete the others.
+services:
+  api:
+    project: ./src/glimpse.Api
+    language: dotnet
+    # host: containerapp   # rules/backend-container-apps.md  |  rules/backend-mcp.md
+    # host: function       # rules/backend-functions.md
+    host: containerapp
+
+# Lifecycle hooks are intentionally omitted from the starter. Migrations run as a
+# CI/CD step, never at app startup (docs/persistence.md); deploy verification is
+# delegated to the aca-deploy-verification / setup-deploy skills.

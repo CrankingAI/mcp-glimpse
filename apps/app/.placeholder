@@ -1,0 +1,3 @@
+This slot is an unscaffolded placeholder. Build it from ../../rules/frontend-web.md.
+Delete this file once apps/app is scaffolded — the verify harness keys off it:
+a deploy-wired or sentinel-removed-but-unscaffolded slot fails check.sh.
