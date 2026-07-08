@@ -32,9 +32,10 @@ _EXFIL = re.compile(
 # Invisible / bidirectional Unicode used to hide instructions in plain sight: zero-width
 # (200b-200f), bidi overrides + isolates (202a-202e, 2066-2069), word-joiners (2060-2064),
 # BOM (feff), and Unicode tag chars (e0000-e007f). Built from code points so no invisible
-# characters live in this source file.
+# characters live in this source file. U+200D (ZERO WIDTH JOINER) is EXCLUDED because ordinary
+# emoji ZWJ sequences (technologist, family, flags) use it — flagging those is a false positive.
 _HIDDEN_RANGES = [
-    (0x200B, 0x200F), (0x202A, 0x202E), (0x2060, 0x2064),
+    (0x200B, 0x200C), (0x200E, 0x200F), (0x202A, 0x202E), (0x2060, 0x2064),
     (0x2066, 0x2069), (0xFEFF, 0xFEFF), (0xE0000, 0xE007F),
 ]
 _HIDDEN = re.compile("[" + "".join(f"{chr(lo)}-{chr(hi)}" for lo, hi in _HIDDEN_RANGES) + "]")

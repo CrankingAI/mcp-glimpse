@@ -34,6 +34,9 @@ class SnapshotParseResult:
 
 _EMPTY = SnapshotParseResult(None, [])
 
+# Bound on the public, anonymous snapshot input (analysis scales linearly, but keep it sane).
+MAX_SNAPSHOT_BYTES = 1_000_000
+
 _RECOGNIZED_TOOL_KEYS = {
     key.lower()
     for key in (
@@ -161,6 +164,12 @@ def _build_header(raw: dict[str, Any]) -> GlimpseSnapshot:
 def parse(snapshot_json: str | None) -> SnapshotParseResult:
     if not snapshot_json or not snapshot_json.strip():
         return _EMPTY
+    if len(snapshot_json) > MAX_SNAPSHOT_BYTES:
+        return SnapshotParseResult(
+            None,
+            [f"snapshot_json is {len(snapshot_json)} bytes, over the "
+             f"{MAX_SNAPSHOT_BYTES}-byte limit; not parsed"],
+        )
     try:
         raw = json.loads(snapshot_json)
     except (ValueError, TypeError):
@@ -169,6 +178,11 @@ def parse(snapshot_json: str | None) -> SnapshotParseResult:
         return _EMPTY
 
     warnings: list[str] = []
+    # Warn (don't silently drop) when a collection field arrives as a scalar/object.
+    for collection in ("servers", "tools", "skills"):
+        value = _ci_get(raw, collection)
+        if value is not None and not isinstance(value, list):
+            warnings.append(f"'{collection}' should be a list; it was ignored")
     snapshot = _build_header(raw)
 
     tools: list[ToolRef] = []

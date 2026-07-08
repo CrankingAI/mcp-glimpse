@@ -19,7 +19,6 @@ import os
 from mcp.server.fastmcp import Context, FastMCP
 from mcp.server.transport_security import TransportSecuritySettings
 from mcp.types import Completion, CompletionArgument, PromptReference, ToolAnnotations
-from pydantic import BaseModel, Field
 from starlette.requests import Request
 from starlette.responses import JSONResponse, PlainTextResponse, Response
 
@@ -30,12 +29,7 @@ from .card import CardStore, create_card_store
 from .feedback import FeedbackStore, create_feedback_store
 from .model import GlimpseReport
 from .parser import parse
-from .primitives import best_effort, client_supports, fetch_roots, narrate
-
-# Elicitation confirm schema (one boolean field) — used to confirm a feedback write.
-class _ConfirmSchema(BaseModel):
-    confirm: bool = Field(default=False, description="Confirm to record this feedback now?")
-
+from .primitives import best_effort, confirm, fetch_roots, narrate
 
 # Argument-completion options for the deep_tool_audit prompt's `focus` arg.
 _AUDIT_FOCUS_OPTIONS = [
@@ -197,25 +191,20 @@ def build_server(
         context: str | None = None,
     ) -> dict[str, str]:
         logger.info("submit_feedback: kind=%s", kind)
-        # Elicitation demonstrator: confirm before writing when the client supports it;
-        # degrade to record-unconfirmed otherwise (folds in mcp-lens-aspnet's confirm_and_note).
-        if client_supports(ctx, "elicitation"):
-            try:
-                result = await ctx.elicit(
-                    f'Record this {kind}: "{(summary or "")[:140]}" now?', _ConfirmSchema
-                )
-                action = getattr(result, "action", None)
-                data = getattr(result, "data", None)
-                confirmed = action == "accept" and data is not None and getattr(data, "confirm", False)
-                if not confirmed:
-                    return {"id": "", "status": f"not recorded (elicitation: {action})", "elicitation": "declined"}
-                recorded = dict(store.record(kind, summary, detail, context))
-                recorded["elicitation"] = "confirmed"
-                return recorded
-            except Exception:
-                pass  # elicitation failed mid-call — degrade to unconfirmed record, never lose it
-        recorded = dict(store.record(kind, summary, detail, context))
-        recorded["elicitation"] = "unconfirmed"
+        # Elicitation demonstrator: confirm before writing when the client supports it; degrade to
+        # record-unconfirmed otherwise (folds in mcp-lens-aspnet's confirm_and_note). The write is
+        # OUTSIDE the elicit path and guarded, so a confirmed write is never double-attempted and a
+        # backend failure never masquerades as an elicitation failure.
+        state = await confirm(ctx, f'Record this {kind}: "{(summary or "")[:140]}" now?')
+        if state == "declined":
+            return {"id": "", "status": "not recorded (declined)", "elicitation": "declined"}
+        try:
+            recorded = dict(store.record(kind, summary, detail, context))
+        except Exception:
+            logger.exception("submit_feedback: store write failed")
+            return {"id": "", "status": "error: feedback not stored (backend unavailable)"}
+        # 'unsupported'/'failed' -> unconfirmed but still recorded (never a silent no-op).
+        recorded["elicitation"] = "confirmed" if state == "confirmed" else "unconfirmed"
         return recorded
 
     @mcp.tool(
@@ -243,21 +232,25 @@ def build_server(
         if isinstance(snapshot_json, (dict, list)):
             snapshot_json = json.dumps(snapshot_json)
         aggregates = card_module.aggregates_from_snapshot_json(snapshot_json)
-        if client_supports(ctx, "elicitation"):
-            try:
-                result = await ctx.elicit(
-                    "Publish an anonymized summary card (aggregate counts only, no tool names)?",
-                    _ConfirmSchema,
-                )
-                action = getattr(result, "action", None)
-                data = getattr(result, "data", None)
-                if not (action == "accept" and data is not None and getattr(data, "confirm", False)):
-                    return {"status": f"not published (elicitation: {action})", "url": ""}
-            except Exception:
-                return {"status": "not published (elicitation failed)", "url": ""}
-        card = card_store.put(aggregates)
+        # Confirm before persisting. An explicit decline blocks publication; when the client can't
+        # elicit (or elicitation fails), the card is aggregate-only so we still publish but say so.
+        state = await confirm(
+            ctx, "Publish an anonymized summary card (aggregate counts only, no tool names)?"
+        )
+        if state == "declined":
+            return {"status": "not published (declined)", "url": ""}
+        try:
+            card = card_store.put(aggregates)
+        except Exception:
+            logger.exception("share_context_card: card write failed")
+            return {"status": "error: card not stored (backend unavailable)", "url": ""}
         logger.info("share_context_card: id=%s tools=%s", card.id, card.tools)
-        return {"status": "published", "id": card.id, "url": f"https://mcpglimpse.com/c/{card.id}"}
+        return {
+            "status": "published" if state == "confirmed" else "published (unconfirmed)",
+            "id": card.id,
+            "url": f"https://mcpglimpse.com/c/{card.id}",
+            "elicitation": "confirmed" if state == "confirmed" else "unconfirmed",
+        }
 
     # --- Prompts -------------------------------------------------------------------------
 
@@ -407,7 +400,11 @@ def build_server(
         card = card_store.get(request.path_params["card_id"])
         if card is None:
             return PlainTextResponse("card not found", status_code=404)
-        png = card_module.render_og_png(card)
+        try:
+            png = card_module.render_og_png(card)
+        except Exception:
+            logger.exception("og_image: render failed for %s", card.id)
+            return PlainTextResponse("card image unavailable", status_code=500)
         return Response(png, media_type="image/png", headers={"Cache-Control": "public, max-age=86400"})
 
     # --- Completions ---------------------------------------------------------------------

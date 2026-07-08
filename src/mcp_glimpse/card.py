@@ -99,9 +99,13 @@ class LocalCardStore(CardStore):
         self.path = Path(path) if path is not None else None
         if self.path is not None and self.path.exists():
             for line in self.path.read_text(encoding="utf-8").splitlines():
-                if line.strip():
+                if not line.strip():
+                    continue
+                try:
                     card = Card.model_validate_json(line)
-                    self.cards[card.id] = card
+                except Exception:
+                    continue  # skip corrupt/legacy lines rather than crash server startup
+                self.cards[card.id] = card
 
     def _persist(self, card: Card) -> None:
         self.cards[card.id] = card
