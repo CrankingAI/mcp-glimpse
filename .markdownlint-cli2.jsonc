@@ -6,6 +6,8 @@
     ".venv/**",
     "node_modules/**",
     "**/dist/**",
-    "app/dist/**"
+    "app/dist/**",
+    // GitHub issue templates use YAML frontmatter + ## sections (not prose docs).
+    ".github/ISSUE_TEMPLATE/**"
   ]
 }
