@@ -1,0 +1,11 @@
+// markdownlint-cli2 runner options for this repo. The RULE config stays in the canonical
+// .markdownlint.jsonc (unforked); this file only tells the runner which trees to skip.
+// .venv/ holds installed-dependency markdown (LICENSE.md etc.) we neither own nor lint.
+{
+  "ignores": [
+    ".venv/**",
+    "node_modules/**",
+    "**/dist/**",
+    "app/dist/**"
+  ]
+}
