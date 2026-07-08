@@ -9,7 +9,7 @@ from pathlib import Path
 
 UI_RESOURCE_URI = "ui://glimpse/index.html"
 
-TOOLS: list[str] = ["introspect_mcp_context", "submit_feedback"]
+TOOLS: list[str] = ["introspect_mcp_context", "submit_feedback", "share_context_card"]
 
 PROMPTS: list[str] = [
     "suggest_explorations",

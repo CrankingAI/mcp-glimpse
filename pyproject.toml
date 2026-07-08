@@ -9,6 +9,8 @@ authors = [{ name = "Bill Wilder", email = "codingoutloud@gmail.com" }]
 dependencies = [
     "pydantic>=2.7",
     "mcp>=1.28",
+    "tiktoken>=0.13.0",
+    "pillow>=12.3.0",
 ]
 
 [project.optional-dependencies]

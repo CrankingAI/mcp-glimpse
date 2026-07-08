@@ -21,10 +21,12 @@ from mcp.server.transport_security import TransportSecuritySettings
 from mcp.types import Completion, CompletionArgument, PromptReference, ToolAnnotations
 from pydantic import BaseModel, Field
 from starlette.requests import Request
-from starlette.responses import JSONResponse, PlainTextResponse
+from starlette.responses import JSONResponse, PlainTextResponse, Response
 
+from . import card as card_module
 from . import connection, manifest, prompts
 from .analyzer import analyze
+from .card import CardStore, create_card_store
 from .feedback import FeedbackStore, create_feedback_store
 from .model import GlimpseReport
 from .parser import parse
@@ -100,8 +102,11 @@ def _transport_security() -> TransportSecuritySettings | None:
     )
 
 
-def build_server(feedback: FeedbackStore | None = None) -> FastMCP:
+def build_server(
+    feedback: FeedbackStore | None = None, cards: CardStore | None = None
+) -> FastMCP:
     store = feedback if feedback is not None else create_feedback_store()
+    card_store = cards if cards is not None else create_card_store()
 
     kwargs: dict = {
         "name": "mcp-glimpse",
@@ -212,6 +217,47 @@ def build_server(feedback: FeedbackStore | None = None) -> FastMCP:
         recorded = dict(store.record(kind, summary, detail, context))
         recorded["elicitation"] = "unconfirmed"
         return recorded
+
+    @mcp.tool(
+        name="share_context_card",
+        description=(
+            "Publish an anonymized 'Agent Facts' summary card and return its URL. This WRITES: it "
+            "persists ONLY aggregate counts (servers, tools, destructive count, annotation "
+            "coverage, capability flags, and the estimated tool-definition token cost) — never tool "
+            "names or descriptions. Elicitation-confirmed before anything is saved. Pass the same "
+            "snapshot_json you would give introspect_mcp_context; the aggregates are derived "
+            "server-side. The returned page carries an OG image that unfurls on X/LinkedIn/Slack."
+        ),
+        annotations=ToolAnnotations(
+            title="Share an anonymized Agent Facts card",
+            readOnlyHint=False,       # it writes
+            destructiveHint=False,    # but does not delete/overwrite
+            idempotentHint=False,     # each call mints a new card id
+            openWorldHint=False,
+        ),
+        structured_output=False,
+    )
+    async def share_context_card(
+        ctx: Context, snapshot_json: str | dict | None = None
+    ) -> dict[str, str]:
+        if isinstance(snapshot_json, (dict, list)):
+            snapshot_json = json.dumps(snapshot_json)
+        aggregates = card_module.aggregates_from_snapshot_json(snapshot_json)
+        if client_supports(ctx, "elicitation"):
+            try:
+                result = await ctx.elicit(
+                    "Publish an anonymized summary card (aggregate counts only, no tool names)?",
+                    _ConfirmSchema,
+                )
+                action = getattr(result, "action", None)
+                data = getattr(result, "data", None)
+                if not (action == "accept" and data is not None and getattr(data, "confirm", False)):
+                    return {"status": f"not published (elicitation: {action})", "url": ""}
+            except Exception:
+                return {"status": "not published (elicitation failed)", "url": ""}
+        card = card_store.put(aggregates)
+        logger.info("share_context_card: id=%s tools=%s", card.id, card.tools)
+        return {"status": "published", "id": card.id, "url": f"https://mcpglimpse.com/c/{card.id}"}
 
     # --- Prompts -------------------------------------------------------------------------
 
@@ -353,6 +399,16 @@ def build_server(feedback: FeedbackStore | None = None) -> FastMCP:
     @mcp.custom_route("/version", methods=["GET"])
     async def version(_request: Request) -> JSONResponse:
         return JSONResponse({"name": "mcp-glimpse", "version": manifest.version()})
+
+    # --- Share-card OG image -------------------------------------------------------------
+
+    @mcp.custom_route("/og/{card_id}", methods=["GET"])
+    async def og_image(request: Request) -> Response:
+        card = card_store.get(request.path_params["card_id"])
+        if card is None:
+            return PlainTextResponse("card not found", status_code=404)
+        png = card_module.render_og_png(card)
+        return Response(png, media_type="image/png", headers={"Cache-Control": "public, max-age=86400"})
 
     # --- Completions ---------------------------------------------------------------------
 

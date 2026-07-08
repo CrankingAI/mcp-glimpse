@@ -4,7 +4,7 @@ from mcp_glimpse import manifest
 
 
 def test_tool_prompt_resource_name_lists():
-    assert manifest.TOOLS == ["introspect_mcp_context", "submit_feedback"]
+    assert manifest.TOOLS == ["introspect_mcp_context", "submit_feedback", "share_context_card"]
     assert manifest.PROMPTS == [
         "suggest_explorations", "full_context_dump",
         "compare_vantage_points", "deep_tool_audit",

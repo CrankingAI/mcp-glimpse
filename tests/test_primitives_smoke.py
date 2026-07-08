@@ -85,7 +85,7 @@ async def _run(elicit_action: str, confirm_value: bool):
 def test_all_primitives_exercised_with_elicitation_accept():
     r = asyncio.run(_run("accept", True))
     # tools / prompts / resources
-    assert r["tool_names"] == {"introspect_mcp_context", "submit_feedback"}
+    assert r["tool_names"] == {"introspect_mcp_context", "submit_feedback", "share_context_card"}
     assert r["prompt_count"] == 4
     assert "glimpse://snapshot-schema" in r["resource_uris"]
     assert r["prompt_messages"]
