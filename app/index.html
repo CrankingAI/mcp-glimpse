@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MCP Glimpse</title>
+    <style>
+      /*
+        Paper & Proof — the mcp-glimpse view.
+        A printed spec-sheet that happens to be alive: warm paper, exact ink, machine facts in
+        monospace, and ONE rationed gate-green accent that appears only where something is true
+        (links, focus, the active tab, verified/annotated marks, the coverage meter).
+
+        Fonts: self-contained iframe (strict CSP, no external requests) — we cannot fetch Google
+        Fonts, so we ride a system stack that preserves the three-voice hierarchy (serif display /
+        sans body / mono data). Named Instrument faces are listed first so hosts that happen to
+        have them installed pick them up for free; everyone else falls back gracefully.
+      */
+      :root {
+        /* Light "Paper" (default theme). */
+        --bg: #F6F4EE;          --surface: #FFFFFF;
+        --fg: #1C1A16;          --muted: #6B665B;
+        --line: #E4E0D5;        --line-strong: #CFCABC;
+        --accent: #16694B;      --accent-wash: #E7F0EB;
+        --warning: #8A5A00;     --warning-wash: #F5EAD4;
+        --danger: #A83A32;      --danger-wash: #F5E2E0;
+        --info: #4A6478;        --info-wash: #E6ECF1;
+
+        --font-serif: "Instrument Serif", Georgia, "Times New Roman", serif;
+        --font-sans: "Instrument Sans", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        --font-mono: "JetBrains Mono", "SF Mono", ui-monospace, Menlo, Consolas, "Liberation Mono", monospace;
+
+        --r-sm: 2px; --r-md: 4px; --r-lg: 8px; --r-xl: 12px; --r-full: 9999px;
+        --dur-medium: 320ms; --ease-enter: cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      [data-theme="dark"] {
+        /* "Bench" — warm dark, never blue. */
+        --bg: #14130F;          --surface: #1D1B16;
+        --fg: #ECE8DD;          --muted: #9A948A;
+        --line: #2A2822;        --line-strong: #3A372F;
+        --accent: #4CC38F;      --accent-wash: #1B2A23;
+        --warning: #D9A13B;     --warning-wash: #2B2415;
+        --danger: #E0685E;      --danger-wash: #2E1B19;
+        --info: #8FAFC5;        --info-wash: #1B242B;
+      }
+
+      * { box-sizing: border-box; }
+      html, body { margin: 0; }
+      body {
+        font: 14px/1.6 var(--font-sans);
+        background: var(--bg);
+        color: var(--fg);
+        -webkit-font-smoothing: antialiased;
+      }
+      .wrap { max-width: 940px; margin: 0 auto; padding: 24px 20px 40px; }
+
+      /* --- type voices --- */
+      .mono { font-family: var(--font-mono); }
+      .muted { color: var(--muted); }
+      .eyebrow {
+        font-family: var(--font-mono); font-size: 11px; font-weight: 500;
+        text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted);
+      }
+      h1.title {
+        font-family: var(--font-serif); font-weight: 400; font-size: 30px; line-height: 1.08;
+        letter-spacing: 0.005em; margin: 6px 0 4px;
+      }
+      .subline { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+      a { color: var(--accent); text-decoration: none; border-bottom: 1px solid transparent; }
+      a:hover { border-bottom-color: var(--accent); }
+
+      /* --- structure: hairlines over boxes, no decorative shadows --- */
+      .stack { display: flex; flex-direction: column; gap: 12px; }
+      .panel {
+        background: var(--surface); border: 1px solid var(--line);
+        border-radius: var(--r-lg); padding: 14px 16px;
+      }
+      .panel > .eyebrow { display: block; margin-bottom: 10px; }
+      .rule { height: 1px; background: var(--line); border: 0; margin: 0; }
+      .hint { font-size: 12.5px; line-height: 1.55; color: var(--muted); }
+      .hint b, .hint strong { color: var(--fg); font-weight: 600; }
+
+      /* --- chips --- */
+      .chip {
+        display: inline-flex; align-items: center; gap: 6px;
+        font-family: var(--font-mono); font-size: 11.5px; line-height: 1.4;
+        padding: 3px 8px; border: 1px solid var(--line); border-radius: var(--r-md);
+        color: var(--fg); background: var(--surface); white-space: nowrap;
+      }
+      .chip.dim { color: var(--muted); opacity: 0.5; }
+      .chip--server { border-color: var(--accent); color: var(--accent); background: transparent; }
+      .chip--server .dot {
+        width: 6px; height: 6px; border-radius: var(--r-full); background: var(--accent);
+      }
+
+      /* --- header stat tiles --- */
+      .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+      .stat { border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); padding: 12px 14px; }
+      .stat__num { font-family: var(--font-mono); font-size: 24px; font-weight: 600; line-height: 1.05; font-variant-numeric: tabular-nums; }
+      .stat__label { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-top: 6px; }
+      .stat--danger .stat__num { color: var(--danger); }
+
+      /* --- context-cost tile --- */
+      .cost { border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); padding: 14px 16px; }
+      .cost__range { font-family: var(--font-mono); font-size: 24px; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; }
+      .cost__of { font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+      .cost__foot { font-size: 11.5px; color: var(--muted); line-height: 1.5; margin-top: 8px; }
+
+      /* --- annotation / poisoning badges --- */
+      .badges { display: inline-flex; gap: 4px; flex-wrap: wrap; }
+      .badge {
+        display: inline-block; font-family: var(--font-mono); font-size: 10px; line-height: 1.5;
+        padding: 1px 6px; border: 1px solid var(--line); border-radius: var(--r-md);
+        color: var(--muted); white-space: nowrap;
+      }
+      .badge--read { color: var(--fg); border-color: var(--line-strong); }
+      .badge--idem { color: var(--muted); }
+      .badge--open { color: var(--warning); border-color: var(--warning); }
+      .badge--destruct { color: var(--danger); border-color: var(--danger); }
+      .badge--title { color: var(--fg); border-color: var(--line); font-style: italic; }
+      .badge--none { color: var(--muted); border-style: dashed; font-style: italic; }
+
+      /* --- the signature: the verify-tick ---
+         A hairline that ticks gate-green on a confirmed thing. Here: a tool that declares
+         MCP annotations (has told the truth about its behaviour) gets a green left rule that
+         draws in; an undeclared tool keeps a neutral rule. */
+      .tick { position: relative; padding-left: 14px; }
+      .tick::before {
+        content: ""; position: absolute; left: 0; top: 3px; bottom: 3px; width: 2px;
+        border-radius: var(--r-sm); background: var(--line-strong);
+      }
+      .tick--on::before {
+        background: var(--accent);
+        animation: tick-draw var(--dur-medium) var(--ease-enter) both;
+        transform-origin: top;
+      }
+      @keyframes tick-draw { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+
+      /* --- coverage meter (green = share of tools that declared the truth) --- */
+      .cov { height: 6px; border-radius: var(--r-full); background: var(--line); overflow: hidden; margin: 10px 0; }
+      .cov__fill { height: 100%; background: var(--accent); border-radius: var(--r-full); transition: width var(--dur-medium) var(--ease-enter); }
+
+      /* --- tool inventory --- */
+      .server-group { margin-top: 14px; }
+      .server-group:first-of-type { margin-top: 4px; }
+      .server-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding-bottom: 4px; }
+      .server-head b { font-family: var(--font-mono); font-size: 12.5px; }
+      .tool { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; padding: 7px 0; border-top: 1px solid var(--line); }
+      .tool__name { font-family: var(--font-mono); font-size: 12.5px; }
+      .tool--danger .tool__name { color: var(--danger); }
+
+      /* --- key/value fact grids (This Connection) --- */
+      .kv { display: grid; grid-template-columns: 132px 1fr; gap: 7px 12px; }
+      .kv__k { font-family: var(--font-mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); padding-top: 1px; }
+      .kv__v { font-family: var(--font-mono); font-size: 12.5px; color: var(--fg); word-break: break-word; }
+      .kv__v .muted { color: var(--muted); }
+
+      /* --- semantic panels --- */
+      .panel--warn { border-color: var(--warning); background: var(--warning-wash); }
+      .panel--warn > .eyebrow { color: var(--warning); }
+      .panel--flag > .eyebrow { color: var(--danger); }
+      .list { margin: 0; padding-left: 18px; }
+      .list li { margin: 3px 0; }
+      .list li.mono { font-size: 12px; }
+
+      /* --- pull moments (serif, rationed like the green) --- */
+      .pull {
+        font-family: var(--font-serif); font-weight: 400; font-size: 19px; line-height: 1.4;
+        color: var(--fg); border-left: 2px solid var(--line-strong); padding: 2px 0 2px 16px; margin: 0;
+      }
+      .pull__cap { font-family: var(--font-mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-top: 10px; }
+
+      /* --- tab bar (client-side state) --- */
+      .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); margin: 16px 0 6px; }
+      .tab {
+        appearance: none; background: none; border: 0; border-bottom: 2px solid transparent;
+        padding: 8px 14px 9px; margin-bottom: -1px; cursor: pointer;
+        font-family: var(--font-sans); font-size: 13.5px; color: var(--muted);
+      }
+      .tab:hover { color: var(--fg); }
+      .tab[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--accent); }
+      .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-sm); }
+      [hidden] { display: none !important; }
+
+      /* --- placeholder states --- */
+      .state { border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); padding: 28px 20px; }
+      .state h2 { font-family: var(--font-serif); font-weight: 400; font-size: 24px; margin: 0 0 4px; }
+
+      /* --- footer --- */
+      .foot { margin-top: 24px; padding-top: 14px; border-top: 1px solid var(--line); font-family: var(--font-mono); font-size: 11px; color: var(--muted); line-height: 1.6; }
+
+      @media (max-width: 560px) {
+        .stats { grid-template-columns: repeat(2, 1fr); }
+        .kv { grid-template-columns: 1fr; gap: 2px 0; }
+        .kv__k { padding-top: 8px; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .tick--on::before { animation: none; }
+        .cov__fill { transition: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/app.ts"></script>
+  </body>
+</html>
