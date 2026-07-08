@@ -16,6 +16,8 @@ from mcp_glimpse.model import (
     ToolRef,
     VantageGap,
 )
+from mcp_glimpse.poisoning import scan as scan_poisoning
+from mcp_glimpse.tokenizer import estimate as estimate_context_cost
 
 _CAMEL_BOUNDARY = re.compile(r"(?<=[a-z0-9])(?=[A-Z])")
 _SEPARATORS = re.compile(r"[ _\-./:]+")
@@ -92,4 +94,6 @@ def analyze(snapshot: GlimpseSnapshot | None, connection: ConnectionFacts) -> An
             server_sees=len(connection.server_tools),
             agent_sees=len(tools),
         ),
+        context_cost=estimate_context_cost(snapshot),
+        tool_poisoning=scan_poisoning(tools),
     )
