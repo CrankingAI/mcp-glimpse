@@ -1,0 +1,191 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ConnectCTA from '../../components/ConnectCTA.astro';
+import { SITE, absUrl } from '../../data/site';
+
+// Shared "Agent Facts" card template.
+//
+// Card DATA is dynamic — the MCP host persists an anonymized aggregate when a
+// user opts in via `share_context_card`, and serves the per-id card + its OG
+// image at share time. This static site ships:
+//   1. this reusable template (the layout/markup), and
+//   2. one concrete example at /c/example that demonstrates it.
+// getStaticPaths returns only `example`; real /c/<id> pages are generated /
+// hydrated by the host when a card is actually shared.
+
+export async function getStaticPaths() {
+  return [
+    {
+      params: { id: 'example' },
+      props: {
+        card: {
+          id: 'example',
+          servers: 15,
+          tools: 178,
+          destructiveUnlabeled: 3,
+          annotationCoverage: '1%',
+          contextCost: '~40K / 200K (20%)',
+          capabilities: ['elicitation ✓', 'sampling ✓', 'roots ✓'],
+          note: 'Sample card. Your numbers come from your own agent.',
+        },
+      },
+    },
+  ];
+}
+
+const { card } = Astro.props;
+// The OG image is rendered server-side by the MCP host per id — not a static
+// asset in this repo. Point at the host's /og/<id> endpoint.
+const ogImage = `https://${SITE.mcpHost}/og/${card.id}`;
+const path = `/c/${card.id}`;
+const title = `Agent Facts — ${card.tools} tools across ${card.servers} servers`;
+const description = `An mcp-glimpse Agent Facts card: ${card.servers} servers, ${card.tools} tools, ${card.destructiveUnlabeled} unlabeled destructive, ${card.annotationCoverage} annotation coverage, context cost ${card.contextCost}.`;
+
+const facts: { label: string; value: string; flag?: boolean }[] = [
+  { label: 'Servers', value: String(card.servers) },
+  { label: 'Tools', value: String(card.tools) },
+  { label: 'Destructive · unlabeled', value: String(card.destructiveUnlabeled), flag: card.destructiveUnlabeled > 0 },
+  { label: 'Annotation coverage', value: card.annotationCoverage },
+  { label: 'Context cost', value: card.contextCost },
+];
+
+const cardSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'CreativeWork',
+  name: title,
+  headline: title,
+  description,
+  url: absUrl(path),
+  image: ogImage,
+  isPartOf: { '@type': 'WebSite', name: SITE.name, url: SITE.url },
+  creator: { '@type': 'Organization', name: SITE.name, url: SITE.url },
+};
+---
+<BaseLayout
+  title={title}
+  description={description}
+  path={path}
+  ogType="article"
+  ogImage={ogImage}
+  ogImageAlt={`Agent Facts card: ${card.servers} servers, ${card.tools} tools, ${card.annotationCoverage} annotation coverage.`}
+  jsonld={[cardSchema]}
+>
+  <section>
+    <div class="wrap card-wrap">
+      <p class="eyebrow">Agent Facts · shared card</p>
+      <h1 class="card-h1">Agent Facts</h1>
+      <p class="lede">
+        A nutrition-label-style snapshot of one agent's MCP environment — the kind
+        of card mcp-glimpse can generate for you and unfurl on social.
+      </p>
+
+      <div class="facts-label" role="group" aria-label="Agent Facts label">
+        <p class="facts-title">Agent Facts</p>
+        <p class="facts-sub">Per introspected agent context</p>
+        <hr class="rule-thick" />
+        <dl class="facts-rows">
+          {
+            facts.map((f) => (
+              <div class="facts-row">
+                <dt>{f.label}</dt>
+                <dd>
+                  {f.value}
+                  {f.flag && <span class="flag" aria-label="flagged"> ⚠</span>}
+                </dd>
+              </div>
+            ))
+          }
+        </dl>
+        <hr class="rule-thick" />
+        <p class="facts-caps">
+          Capabilities: {card.capabilities.join(' · ')}
+        </p>
+        <p class="facts-foot muted small">{card.note}</p>
+      </div>
+
+      <p class="muted small card-note">
+        This example is served statically. Real shared cards live at
+        <code>/c/&lt;id&gt;</code> with a server-rendered OG image at
+        <code>{SITE.mcpHost}/og/&lt;id&gt;</code>, generated when someone opts in to
+        share an anonymized card. Only aggregate numbers are ever stored — never
+        tool names or descriptions.
+      </p>
+
+      <ConnectCTA heading="Make your own Agent Facts card" />
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .card-wrap {
+    max-width: 720px;
+  }
+  .card-h1 {
+    margin-bottom: 0.4rem;
+  }
+  .facts-label {
+    background: var(--color-surface);
+    border: 2px solid var(--color-foreground);
+    border-radius: var(--radius-md);
+    padding: 1.4rem 1.6rem;
+    max-width: 460px;
+    margin: 1.8rem 0 1.5rem;
+    font-family: var(--font-mono);
+  }
+  .facts-title {
+    font-family: var(--font-serif);
+    font-size: 2rem;
+    line-height: 1;
+    margin: 0;
+  }
+  .facts-sub {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-muted);
+    margin: 0.2rem 0 0;
+  }
+  .rule-thick {
+    border: none;
+    border-top: 4px solid var(--color-foreground);
+    margin: 0.7rem 0;
+  }
+  .facts-rows {
+    margin: 0;
+  }
+  .facts-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .facts-row:last-child {
+    border-bottom: none;
+  }
+  .facts-row dt {
+    font-size: 0.9rem;
+  }
+  .facts-row dd {
+    margin: 0;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .flag {
+    color: var(--color-warning);
+  }
+  .facts-caps {
+    font-size: 0.82rem;
+    color: var(--color-accent);
+    margin: 0.2rem 0 0.4rem;
+  }
+  .facts-foot {
+    margin: 0;
+  }
+  .card-note {
+    border-left: 2px solid var(--color-border-strong);
+    padding-left: 1rem;
+    max-width: 70ch;
+  }
+</style>

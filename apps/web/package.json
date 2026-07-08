@@ -1,0 +1,17 @@
+{
+  "name": "@mcp-glimpse/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "www.mcpglimpse.com — AEO-tuned marketing + Learn site (static Astro, Paper & Proof design system).",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "astro": "^5.6.0"
+  }
+}

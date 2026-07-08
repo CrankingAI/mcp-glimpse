@@ -1,0 +1,38 @@
+---
+import { SITE } from '../data/site';
+const year = new Date().getFullYear();
+---
+<footer class="site-footer">
+  <div class="wrap footer-inner">
+    <div class="footer-col">
+      <p class="footer-brand"><span aria-hidden="true">✓</span> {SITE.name}</p>
+      <p class="muted small">
+        Point your agent at itself. Snapshots are analyzed in memory and never
+        persisted.
+      </p>
+    </div>
+    <nav class="footer-col" aria-label="Footer">
+      <p class="eyebrow">Explore</p>
+      <ul class="footer-list">
+        <li><a href="/">Home</a></li>
+        <li><a href="/learn">Learn</a></li>
+        <li><a href="/privacy">Privacy</a></li>
+        <li><a href="/feed.xml">RSS feed</a></li>
+      </ul>
+    </nav>
+    <nav class="footer-col" aria-label="Machine-readable">
+      <p class="eyebrow">For machines</p>
+      <ul class="footer-list">
+        <li><a href="/llms.txt">llms.txt</a></li>
+        <li><a href="/llms-full.txt">llms-full.txt</a></li>
+        <li><a href="/sitemap.xml">sitemap.xml</a></li>
+        <li><a href={SITE.repo} rel="noopener">Source</a></li>
+      </ul>
+    </nav>
+  </div>
+  <div class="wrap footer-legal">
+    <p class="muted small">
+      © {year} CrankingAI · Open source (MIT) · <a href={`mailto:${SITE.contactEmail}`}>{SITE.contactEmail}</a>
+    </p>
+  </div>
+</footer>

@@ -1,0 +1,6 @@
+# RFC 9116 — security contact for mcpglimpse.com
+Contact: mailto:codingoutloud@gmail.com
+Expires: 2027-07-07T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://www.mcpglimpse.com/.well-known/security.txt
+Policy: https://www.mcpglimpse.com/security

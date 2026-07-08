@@ -1,0 +1,249 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import ConnectCTA from '../components/ConnectCTA.astro';
+import { SITE, absUrl } from '../data/site';
+import { render, type CollectionEntry } from 'astro:content';
+
+interface Props {
+  entry: CollectionEntry<'learn'>;
+}
+const { entry } = Astro.props;
+const { data } = entry;
+const path = `/learn/${entry.id}`;
+const url = absUrl(path);
+const published = data.pubDate.toISOString();
+const modified = (data.updatedDate ?? data.pubDate).toISOString();
+
+// Render the markdown body (the depth). It must contain no <h1>; the question
+// title below is the page's single <h1>.
+const { Content } = await render(entry);
+---
+<BaseLayout
+  title={data.title}
+  description={data.description}
+  path={path}
+  ogType="article"
+  publishedTime={published}
+  modifiedTime={modified}
+  jsonld={[
+    {
+      '@context': 'https://schema.org',
+      '@type': 'TechArticle',
+      headline: data.title,
+      description: data.description,
+      about: 'Model Context Protocol (MCP)',
+      inLanguage: SITE.lang,
+      datePublished: published,
+      dateModified: modified,
+      keywords: data.tags.join(', '),
+      author: { '@type': 'Organization', name: 'CrankingAI', url: SITE.url },
+      publisher: {
+        '@type': 'Organization',
+        name: SITE.name,
+        url: SITE.url,
+      },
+      image: absUrl(SITE.ogImage),
+      mainEntityOfPage: { '@type': 'WebPage', '@id': url },
+      isPartOf: { '@type': 'WebSite', name: SITE.name, url: SITE.url },
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      // Derived directly from the on-page Q&A rendered below — not invented.
+      mainEntity: data.faqs.map((f) => ({
+        '@type': 'Question',
+        name: f.question,
+        acceptedAnswer: { '@type': 'Answer', text: f.answer },
+      })),
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: SITE.url },
+        { '@type': 'ListItem', position: 2, name: 'Learn', item: absUrl('/learn') },
+        { '@type': 'ListItem', position: 3, name: data.title, item: url },
+      ],
+    },
+  ]}
+>
+  <article class="article">
+    <div class="wrap article-wrap">
+      <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a href="/">Home</a> <span aria-hidden="true">/</span>
+        <a href="/learn">Learn</a>
+      </nav>
+
+      <header class="article-head">
+        <p class="eyebrow">Learn · MCP</p>
+        <h1>{data.title}</h1>
+        <p class="lede answer">{data.answer}</p>
+        <p class="muted small article-meta">
+          <time datetime={published}>
+            {data.pubDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+          </time>
+          {data.tags.length > 0 && <span aria-hidden="true"> · </span>}
+          {data.tags.join(' · ')}
+        </p>
+      </header>
+
+      <div class="prose">
+        <Content />
+      </div>
+
+      <section class="faq" aria-labelledby="faq-heading">
+        <p class="eyebrow">Quick answers</p>
+        <h2 id="faq-heading">Frequently asked</h2>
+        <dl class="faq-list">
+          {
+            data.faqs.map((f) => (
+              <div class="faq-item">
+                <dt>{f.question}</dt>
+                <dd>{f.answer}</dd>
+              </div>
+            ))
+          }
+        </dl>
+      </section>
+
+      <ConnectCTA />
+    </div>
+  </article>
+</BaseLayout>
+
+<style>
+  .article-wrap {
+    max-width: 760px;
+    padding-block: clamp(2rem, 5vw, 3.5rem);
+  }
+  .breadcrumb {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--color-muted);
+    margin-bottom: 1.5rem;
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+  }
+  .breadcrumb a {
+    color: var(--color-muted);
+    text-decoration: none;
+  }
+  .breadcrumb a:hover {
+    color: var(--color-accent);
+  }
+  .article-head {
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: 1.75rem;
+    margin-bottom: 2rem;
+  }
+  .answer {
+    margin-top: 0.75rem;
+  }
+  .article-meta {
+    margin-top: 1rem;
+    font-family: var(--font-mono);
+    margin-bottom: 0;
+  }
+
+  /* Prose — body copy from markdown. */
+  .prose :global(h2) {
+    margin-top: 2.4rem;
+    padding-top: 0.4rem;
+  }
+  .prose :global(h3) {
+    margin-top: 1.8rem;
+  }
+  .prose :global(ul),
+  .prose :global(ol) {
+    max-width: var(--measure);
+    padding-left: 1.3rem;
+    margin: 0 0 1.1em;
+  }
+  .prose :global(li) {
+    margin-bottom: 0.4em;
+  }
+  .prose :global(li)::marker {
+    color: var(--color-accent);
+  }
+  .prose :global(blockquote) {
+    margin: 1.4rem 0;
+    padding: 0.4rem 0 0.4rem 1.1rem;
+    border-left: 2px solid var(--color-accent);
+    color: var(--color-muted);
+    font-style: italic;
+  }
+  .prose :global(blockquote p) {
+    margin-bottom: 0;
+  }
+  .prose :global(pre) {
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+    border-left: 2px solid var(--color-accent);
+    border-radius: var(--radius-md);
+    padding: 0.9rem 1.1rem;
+    overflow-x: auto;
+    margin: 0 0 1.2rem;
+    line-height: 1.5;
+  }
+  .prose :global(pre code) {
+    background: none;
+    color: var(--color-foreground);
+    padding: 0;
+  }
+  .prose :global(table) {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+    margin: 0 0 1.4rem;
+    display: block;
+    overflow-x: auto;
+  }
+  .prose :global(th),
+  .prose :global(td) {
+    text-align: left;
+    padding: 0.6rem 0.85rem;
+    border-bottom: 1px solid var(--color-border);
+    vertical-align: top;
+  }
+  .prose :global(th) {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-muted);
+    font-weight: 500;
+  }
+  .prose :global(hr) {
+    border: none;
+    border-top: 1px solid var(--color-border);
+    margin: 2rem 0;
+  }
+
+  .faq {
+    border-top: 1px solid var(--color-border);
+    padding-top: 2rem;
+    margin-top: 2.5rem;
+  }
+  .faq-list {
+    margin: 0;
+  }
+  .faq-item {
+    padding: 1.1rem 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .faq-item:last-child {
+    border-bottom: none;
+  }
+  .faq dt {
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+  }
+  .faq dd {
+    margin: 0;
+    color: var(--color-muted);
+    max-width: var(--measure);
+  }
+</style>

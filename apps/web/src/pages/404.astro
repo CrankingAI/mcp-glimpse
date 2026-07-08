@@ -1,0 +1,28 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const description = 'That page could not be found — but your agent can still see itself.';
+---
+<BaseLayout title="404 — Not found" description={description} path="/404" noindex={true}>
+  <section>
+    <div class="wrap notfound">
+      <p class="eyebrow">Error 404</p>
+      <h1>No such page in view</h1>
+      <p class="lede">
+        The URL you asked for isn't here. A fitting problem for a project about
+        seeing exactly what's in front of you.
+      </p>
+      <div class="btn-row">
+        <a class="btn btn-primary" href="/">Back to home</a>
+        <a class="btn btn-ghost" href="/learn">Browse Learn</a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .notfound {
+    max-width: 620px;
+    padding-block: clamp(2rem, 8vw, 5rem);
+  }
+</style>

@@ -1,0 +1,31 @@
+---
+// The SAME closing CTA every Learn article ends with (rendered by ArticleLayout,
+// so the wording is identical everywhere and cannot drift). Also reusable
+// elsewhere. Two connect paths: hosted HTTP endpoint, or local stdio via uvx.
+import { SITE } from '../data/site';
+interface Props {
+  heading?: string;
+}
+const { heading = 'See it on your own agent' } = Astro.props;
+---
+<aside class="cta" aria-labelledby="cta-heading">
+  <p class="eyebrow">Try it</p>
+  <h2 id="cta-heading" class="cta-heading">{heading}</h2>
+  <p class="cta-lede">
+    Connect the hosted MCP server and run <code>{SITE.primaryTool}</code>. Give it
+    a snapshot of everything you can see and it renders your whole context — every
+    server, every tool, the annotations, the capabilities in play.
+  </p>
+  <div class="cta-block">
+    <p class="eyebrow">Hosted (Streamable HTTP)</p>
+    <pre class="code" tabindex="0"><code>{SITE.mcpEndpoint}</code></pre>
+    <p class="muted small">Add it as a connector, then run <code>{SITE.primaryTool}</code>.</p>
+  </div>
+  <div class="cta-block">
+    <p class="eyebrow">Local (stdio)</p>
+    <pre class="code" tabindex="0"><code>uvx {SITE.pypiPackage}</code></pre>
+    <p class="muted small">
+      Same server object, over stdio — for any local MCP host.
+    </p>
+  </div>
+</aside>

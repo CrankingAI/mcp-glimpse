@@ -1,0 +1,108 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { SITE, absUrl } from '../data/site';
+
+const description =
+  'How mcp-glimpse handles data: introspection snapshots are analyzed in memory and never persisted. Only explicit feedback and opted-in share cards are stored.';
+
+const updated = '2026-07-07';
+
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebPage',
+  name: 'Privacy',
+  description,
+  url: absUrl('/privacy'),
+  dateModified: updated,
+  isPartOf: { '@type': 'WebSite', name: SITE.name, url: SITE.url },
+  publisher: { '@type': 'Organization', name: 'CrankingAI', url: SITE.url },
+};
+---
+<BaseLayout title="Privacy" description={description} path="/privacy" jsonld={[schema]}>
+  <section>
+    <div class="wrap privacy">
+      <p class="eyebrow">Policy</p>
+      <h1>Privacy</h1>
+      <p class="lede">
+        The short version: your introspection snapshot is analyzed in memory and
+        <strong>never persisted</strong>. Data minimization isn't a footnote here —
+        it's the design.
+      </p>
+      <p class="muted small">Last updated {updated}.</p>
+
+      <h2>The introspection snapshot</h2>
+      <p>
+        When you run <code>{SITE.primaryTool}</code>, your agent sends a snapshot of
+        what it can see so the server can render your context. That snapshot is
+        processed <strong>in memory only</strong>. It is not written to a database,
+        not written to logs, and not retained after the response is returned. There
+        is no snapshot logging anywhere in the server.
+      </p>
+
+      <h2>What is stored — only when you ask</h2>
+      <ul>
+        <li>
+          <strong>Feedback.</strong> If you call <code>submit_feedback</code>, the
+          message you send is stored durably so we can act on it. When your client
+          supports it, this is confirmed via elicitation before anything is written;
+          otherwise it is recorded and labeled "unconfirmed."
+        </li>
+        <li>
+          <strong>Share cards.</strong> If you choose to publish an anonymized
+          <a href="/c/example">Agent Facts card</a>, only the aggregate numbers you
+          approve are persisted — counts and coverage figures. Tool names and
+          descriptions are never stored unless you explicitly opt in.
+        </li>
+      </ul>
+      <p>
+        Both are <strong>explicit, opt-in writes</strong>. Nothing is persisted as a
+        side effect of introspecting.
+      </p>
+
+      <h2>The website itself</h2>
+      <p>
+        This site (<code>{SITE.url.replace('https://', '')}</code>) is a static
+        site. It sets no advertising cookies and does not sell data. Standard server
+        and edge request logs may record coarse metadata (IP, user agent, requested
+        path) for security and aggregate traffic understanding, consistent with the
+        host's own retention. AI crawlers are explicitly
+        <a href="/robots.txt">welcomed in robots.txt</a> — answer engines are the
+        distribution channel, not the adversary.
+      </p>
+
+      <h2>What a server can see about you anyway</h2>
+      <p>
+        Independent of this policy, it's worth knowing the protocol-level limits of
+        what any MCP server can observe. We wrote it up:
+        <a href="/learn/what-can-an-mcp-server-see">What can an MCP server see about
+        you?</a>
+      </p>
+
+      <h2>Contact</h2>
+      <p>
+        Questions about privacy or a data request:
+        <a href={`mailto:${SITE.contactEmail}`}>{SITE.contactEmail}</a>. Security
+        reports: see <a href="/.well-known/security.txt">security.txt</a>.
+      </p>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .privacy {
+    max-width: 720px;
+  }
+  .privacy h2 {
+    margin-top: 2.4rem;
+  }
+  .privacy ul {
+    max-width: var(--measure);
+    padding-left: 1.3rem;
+  }
+  .privacy li {
+    margin-bottom: 0.6rem;
+  }
+  .privacy li::marker {
+    color: var(--color-accent);
+  }
+</style>

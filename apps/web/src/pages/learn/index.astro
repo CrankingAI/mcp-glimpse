@@ -1,0 +1,138 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+import { SITE, absUrl } from '../../data/site';
+
+const articles = (await getCollection('learn')).sort(
+  (a, b) => a.data.order - b.data.order,
+);
+
+const description =
+  'Answer-shaped explainers on the Model Context Protocol — primitives, the vantage gap, tool annotations, transports, context cost, and reading an introspection report.';
+
+const collectionSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: 'Learn — MCP explainers',
+  description,
+  url: absUrl('/learn'),
+  isPartOf: { '@type': 'WebSite', name: SITE.name, url: SITE.url },
+  hasPart: articles.map((a) => ({
+    '@type': 'TechArticle',
+    headline: a.data.title,
+    url: absUrl(`/learn/${a.id}`),
+    datePublished: a.data.pubDate.toISOString(),
+  })),
+};
+
+const breadcrumb = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: SITE.url },
+    { '@type': 'ListItem', position: 2, name: 'Learn', item: absUrl('/learn') },
+  ],
+};
+---
+<BaseLayout title="Learn — MCP explainers" description={description} path="/learn" jsonld={[collectionSchema, breadcrumb]}>
+  <section>
+    <div class="wrap learn-index">
+      <p class="eyebrow">Learn · Model Context Protocol</p>
+      <h1>MCP, answered plainly</h1>
+      <p class="lede">
+        A small library of genuinely good explainers about the Model Context
+        Protocol. Each starts with a question and a direct answer, then goes deep —
+        written to be useful to a person and legible to an answer engine.
+      </p>
+
+      <ol class="index-list">
+        {
+          articles.map((a) => (
+            <li class="index-item">
+              <a href={`/learn/${a.id}`} class="index-link">
+                <span class="index-title">{a.data.title}</span>
+                <span class="index-answer muted">{a.data.answer}</span>
+                <span class="index-meta">
+                  {a.data.tags.slice(0, 3).map((t) => (
+                    <span class="tag">{t}</span>
+                  ))}
+                </span>
+              </a>
+            </li>
+          ))
+        }
+      </ol>
+
+      <p class="muted small">
+        Machine-readable index: <a href="/llms.txt">llms.txt</a> ·
+        <a href="/llms-full.txt">llms-full.txt</a> · <a href="/feed.xml">RSS feed</a>
+      </p>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .learn-index {
+    max-width: 820px;
+  }
+  .index-list {
+    list-style: none;
+    counter-reset: item;
+    margin: 2.5rem 0 2rem;
+    padding: 0;
+    border-top: 1px solid var(--color-border);
+  }
+  .index-item {
+    border-bottom: 1px solid var(--color-border);
+    counter-increment: item;
+  }
+  .index-link {
+    display: grid;
+    gap: 0.4rem;
+    padding: 1.4rem 0 1.4rem 2.6rem;
+    position: relative;
+    text-decoration: none;
+    color: var(--color-foreground);
+  }
+  .index-link::before {
+    content: counter(item, decimal-leading-zero);
+    position: absolute;
+    left: 0;
+    top: 1.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--color-accent);
+  }
+  .index-title {
+    font-family: var(--font-serif);
+    font-size: clamp(1.35rem, 2.5vw, 1.7rem);
+    line-height: 1.15;
+  }
+  .index-link:hover .index-title {
+    color: var(--color-accent);
+  }
+  .index-answer {
+    font-size: 0.95rem;
+    max-width: 70ch;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .index-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.2rem;
+  }
+  .tag {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-muted);
+    border: 1px solid var(--color-border);
+    padding: 0.1rem 0.45rem;
+    border-radius: var(--radius-sm);
+  }
+</style>

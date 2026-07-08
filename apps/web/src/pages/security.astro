@@ -1,0 +1,78 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { SITE, absUrl } from '../data/site';
+
+const description =
+  'Security policy for mcp-glimpse — how to report a vulnerability, our disclosure approach, and the design decisions that reduce risk.';
+
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebPage',
+  name: 'Security',
+  description,
+  url: absUrl('/security'),
+  isPartOf: { '@type': 'WebSite', name: SITE.name, url: SITE.url },
+};
+---
+<BaseLayout title="Security" description={description} path="/security" jsonld={[schema]}>
+  <section>
+    <div class="wrap secpage">
+      <p class="eyebrow">Policy</p>
+      <h1>Security</h1>
+      <p class="lede">
+        mcp-glimpse is open source. If you find a vulnerability, we want to hear
+        about it — and we'll credit you.
+      </p>
+
+      <h2>Reporting a vulnerability</h2>
+      <p>
+        Email <a href={`mailto:${SITE.contactEmail}`}>{SITE.contactEmail}</a> with
+        a description, reproduction steps, and impact. Please give us a reasonable
+        window to remediate before public disclosure. The machine-readable contact
+        lives at <a href="/.well-known/security.txt">/.well-known/security.txt</a>
+        (RFC 9116).
+      </p>
+
+      <h2>Design decisions that reduce risk</h2>
+      <ul>
+        <li>Introspection snapshots are analyzed in memory and never persisted.</li>
+        <li>
+          The MCP App view is one self-contained HTML file rendered in a
+          CSP-locked iframe that makes no external requests; tool data is never
+          injected with <code>innerHTML</code>.
+        </li>
+        <li>
+          The server is public by design; when authentication is added, its
+          protected-resource metadata will be published per the relevant RFCs.
+        </li>
+      </ul>
+
+      <h2>Related reading</h2>
+      <p>
+        For the protocol-level limits of what any MCP server can observe, see
+        <a href="/learn/what-can-an-mcp-server-see">What can an MCP server see about
+        you?</a> and <a href="/learn/reading-an-introspection-report">Reading an
+        introspection report</a>.
+      </p>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .secpage {
+    max-width: 720px;
+  }
+  .secpage h2 {
+    margin-top: 2.2rem;
+  }
+  .secpage ul {
+    max-width: var(--measure);
+    padding-left: 1.3rem;
+  }
+  .secpage li {
+    margin-bottom: 0.5rem;
+  }
+  .secpage li::marker {
+    color: var(--color-accent);
+  }
+</style>

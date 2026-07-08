@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json.schemas.azure.com/staticwebapp.config.json",
+  "trailingSlash": "auto",
+  "mimeTypes": {
+    ".txt": "text/plain",
+    ".xml": "application/xml",
+    ".webmanifest": "application/manifest+json"
+  },
+  "routes": [
+    {
+      "route": "/app-demo.html",
+      "headers": {
+        "X-Robots-Tag": "noindex, nofollow"
+      }
+    },
+    {
+      "route": "/.well-known/security.txt",
+      "headers": {
+        "content-type": "text/plain"
+      }
+    }
+  ],
+  "responseOverrides": {
+    "404": {
+      "rewrite": "/404.html"
+    }
+  },
+  "globalHeaders": {
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "strict-origin-when-cross-origin"
+  }
+}

@@ -1,0 +1,13 @@
+---
+// The ONE reusable JSON-LD injector. Every page passes plain schema objects to
+// BaseLayout, which renders each through this component into <head> at build
+// time — so the structured data is present on the first GET, before any JS.
+interface Props {
+  schema: Record<string, unknown>;
+}
+const { schema } = Astro.props;
+// set:html avoids Astro HTML-escaping the JSON (which would break parsers).
+// Content is build-time author data, never user input.
+const json = JSON.stringify(schema);
+---
+<script type="application/ld+json" set:html={json} />
