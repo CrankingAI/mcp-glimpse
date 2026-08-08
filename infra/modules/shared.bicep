@@ -95,7 +95,7 @@ module keyVault 'br/public:avm/res/key-vault/vault:0.12.1' = {
     tags: tags
     // RBAC over the legacy access-policy model (docs/security.md).
     enableRbacAuthorization: true
-    enablePurgeProtection: true
+    enablePurgeProtection: false // OFF per estate decision (devp-azure-ops ADR 0005, 2026-08-08): one-way door that blocks delete/recreate migrations
     sku: 'standard'
     // Grant the workload identity read access to secrets at provision time.
     roleAssignments: [
