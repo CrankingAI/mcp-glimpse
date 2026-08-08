@@ -47,11 +47,8 @@ param containerImage string = ''
 @description('Custom domain for the MCP host (empty = default ACA FQDN only until DNS/cert are set).')
 param mcpCustomDomain string = ''
 
-@description('Shared Azure Container Registry name (holds the mcp-glimpse image).')
-param acrName string = 'crankingaiacr'
-
-@description('Resource group of the shared ACR (for the cross-RG AcrPull grant).')
-param acrResourceGroup string = 'crankingai-rg'
+@description('Login server of the fleet-shared registry (creffaz, EffAz-Ops). AcrPull for the app MI is granted cross-subscription by devp-azure-ops/infra/container-platform (F-0008, 2026-08-08).')
+param sharedContainerRegistryLoginServer string = 'creffaz.azurecr.io'
 
 // ---- Derived names ----------------------------------------------------------
 
@@ -102,20 +99,13 @@ module aca 'app/aca.bicep' = if (!empty(containerImage)) {
     storageAccountName: shared.outputs.storageAccountName
     logAnalyticsWorkspaceId: shared.outputs.logAnalyticsWorkspaceId
     appInsightsConnectionString: shared.outputs.appInsightsConnectionString
-    acrLoginServer: '${acrName}.azurecr.io'
+    acrLoginServer: sharedContainerRegistryLoginServer
     customDomain: mcpCustomDomain
   }
 }
 
-// Cross-RG AcrPull for the app's managed identity on the shared registry.
-module acrPull 'app/acr-pull.bicep' = {
-  scope: resourceGroup(acrResourceGroup)
-  name: 'acrpull-${env}'
-  params: {
-    acrName: acrName
-    principalId: shared.outputs.managedIdentityPrincipalId
-  }
-}
+// AcrPull on the shared registry is cross-subscription and therefore granted
+// by the registry's owner (devp-azure-ops container-platform), not from here.
 
 // BEGIN edge-logs (removed by seed-init.sh --edge none)
 // ---- Edge -------------------------------------------------------------------

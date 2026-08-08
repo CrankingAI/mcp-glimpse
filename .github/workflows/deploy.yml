@@ -30,15 +30,18 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Build & push image (amd64, in-cloud)
+      - name: Build & push image (amd64, runner build)
         run: |
-          az acr build --registry crankingaiacr --platform linux/amd64 \
-            --image mcp-glimpse:${VERSION} .
+          # Runner build + push needs only AcrPush+Reader on the shared registry
+          # (az acr build would need registry Contributor — too broad on creffaz).
+          az acr login --name creffaz --subscription 3e954001-7df3-40e2-bb70-a61492ac8102
+          docker buildx build --platform linux/amd64 --push \
+            -t creffaz.azurecr.io/mcp-glimpse/mcp-prod:${VERSION} .
 
       - name: Roll new revision
         run: |
           az containerapp update -g rg-glimpse-prod -n app-glimpse-prod \
-            --image crankingaiacr.azurecr.io/mcp-glimpse:${VERSION}
+            --image creffaz.azurecr.io/mcp-glimpse/mcp-prod:${VERSION}
 
       - name: Smoke the live artifact (/readyz + /version == tag)
         run: |
