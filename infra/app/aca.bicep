@@ -4,7 +4,7 @@
 // managed identity + storage + Log Analytics; pulls its image from a shared ACR (AcrPull is
 // granted cross-RG in infra/app/acr-pull.bicep). Bakes in every ACA "failed only live" fix:
 // publicNetworkAccess Enabled, registries+pull identity, AZURE_CLIENT_ID in the container env,
-// MCP_ALLOWED_HOSTS set, minReplicas=maxReplicas=1 with sticky sessions (session-bearing HTTP),
+// MCP_ALLOWED_HOSTS set, scale 0..1 with sticky sessions (session-bearing HTTP; F-0009),
 // and custom domains declared in IaC (bindingType Auto).
 
 param location string
@@ -138,7 +138,10 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = {
         }
       ]
       scale: {
-        minReplicas: 1
+        // 0 per estate F-0009 (devp-azure-ops): max=1 gave no zero-downtime
+        // benefit anyway; idle scale-down re-initializes MCP sessions on the
+        // next request (acceptable cold-start for a free showcase endpoint).
+        minReplicas: 0
         maxReplicas: 1
       }
     }
