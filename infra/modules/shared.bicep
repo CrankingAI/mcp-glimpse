@@ -125,7 +125,11 @@ module appConfig 'br/public:avm/res/app-configuration/configuration-store:0.7.0'
     name: appConfigName
     location: location
     tags: tags
-    sku: 'Standard'
+    // Free per the pre-launch estate cost posture (the store was downgraded
+    // out-of-band ~2026-08-08; template drift broke provisions — Free rejects
+    // the Standard-tier softDeleteRetentionInDays the AVM module otherwise
+    // sends). Restore Standard when flags need geo-replication/SLA.
+    sku: 'Free'
     // Disable local auth -> identity-only (passwordless) access.
     disableLocalAuth: true
     roleAssignments: [
