@@ -37,7 +37,12 @@ var appConfigName = 'appcs-${project}-${env}'
 
 // Globally-unique namespaces keep the readable stem + a uniqueString tail.
 // KV names: <= 24 chars, alphanumeric + hyphens. Storage: <= 24, alphanumeric.
-var keyVaultName = take('kv-${project}-${env}-${globalSuffix}', 24)
+// r2: the first-generation vault was created with purge protection on
+// (irreversible, contra ADR 0005) and was deleted empty on 2026-08-11; its
+// soft-delete ghost holds the old name until ~2026-11-09. Salting the name
+// makes the next provision create a fresh vault with purge protection off.
+// Do not revert to the un-salted name before the ghost purges.
+var keyVaultName = take('kv-${project}-${env}-r2${globalSuffix}', 24)
 var storageAccountName = take(toLower('st${project}${env}${globalSuffix}'), 24)
 
 // Built-in role definition IDs (data-plane RBAC).
