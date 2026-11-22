@@ -153,6 +153,22 @@ class PoisoningFinding(CamelModel):
     detail: str
 
 
+class AnnotationVisibility(CamelModel):
+    """Ground truth for the annotation lens: this server KNOWS what it declared on its own tools,
+    so finding them in the snapshot shows whether annotations survive server -> host -> agent.
+
+    verdict: "hidden" (none of ours came back annotated — the host doesn't surface annotations to
+    the model, or the agent dropped them, so 'unannotated' counts are not evidence), "visible"
+    (all came back), or "partial".
+    """
+
+    own_tools_in_snapshot: int = 0
+    own_tools_declared: int = 0
+    own_tools_echoed: int = 0
+    verdict: str
+    detail: str
+
+
 class Analysis(CamelModel):
     total_tools: int = 0
     total_servers: int = 0
@@ -163,6 +179,7 @@ class Analysis(CamelModel):
     dangerous_tool_count: int = 0
     annotated_tool_count: int = 0
     unannotated_tool_count: int = 0
+    annotation_visibility: AnnotationVisibility | None = None
     inconsistencies: list[str] = []
     vantage_gap: VantageGap | None = None
     context_cost: ContextCost | None = None

@@ -1,4 +1,4 @@
-"""FastMCP wiring for mcp-glimpse: 2 tools, 4 prompts, 6 glimpse:// resources + the ui:// view.
+"""FastMCP wiring for mcp-glimpse: 3 tools, 4 prompts, 6 glimpse:// resources + the ui:// view.
 
 Wire-format contract (do not break):
 * Tools return the GlimpseReport serialized as **camelCase** JSON text via
@@ -118,6 +118,17 @@ def build_server(
 
     # --- Tools ---------------------------------------------------------------------------
 
+    async def _own_annotated() -> dict[str, bool]:
+        # Ground truth for the annotation-visibility lens: what THIS server actually declares.
+        out: dict[str, bool] = {}
+        for tool in await mcp.list_tools():
+            a = tool.annotations
+            out[tool.name] = a is not None and any(
+                v is not None
+                for v in (a.title, a.readOnlyHint, a.destructiveHint, a.idempotentHint, a.openWorldHint)
+            )
+        return out
+
     @mcp.tool(
         name="introspect_mcp_context",
         description=_INTROSPECT_DESCRIPTION,
@@ -145,7 +156,7 @@ def build_server(
         conn = connection.observe(ctx)
         conn.roots = await fetch_roots(ctx)  # roots/list demonstrator (degrades to [])
         await best_effort(ctx.report_progress, 0.55, 1.0, "computing analysis")
-        analysis = analyze(parsed.snapshot, conn)
+        analysis = analyze(parsed.snapshot, conn, await _own_annotated())
         summary_line = (
             f"{analysis.total_tools} tools across {analysis.total_servers} servers; "
             f"{analysis.dangerous_tool_count} flagged dangerous; "

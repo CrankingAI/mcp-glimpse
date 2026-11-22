@@ -114,6 +114,14 @@ export interface PoisoningFinding {
   detail: string;
 }
 
+export interface AnnotationVisibility {
+  ownToolsInSnapshot?: number;
+  ownToolsDeclared?: number;
+  ownToolsEchoed?: number;
+  verdict: string;
+  detail: string;
+}
+
 export interface Analysis {
   totalTools?: number;
   totalServers?: number;
@@ -124,6 +132,7 @@ export interface Analysis {
   dangerousToolCount?: number;
   annotatedToolCount?: number;
   unannotatedToolCount?: number;
+  annotationVisibility?: AnnotationVisibility;
   inconsistencies?: string[];
   vantageGap?: VantageGap;
   contextCost?: ContextCost;

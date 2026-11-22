@@ -103,3 +103,72 @@ def test_inconsistencies_are_surfaced():
     result = analyze(snap, conn())
     assert len(result.inconsistencies) == 1
     assert "delete_it" in result.inconsistencies[0]
+
+
+# --- Annotation visibility: the server's own tools are ground truth ------------------------------
+
+_OWN = {"introspect_mcp_context": True, "submit_feedback": True, "share_context_card": True}
+
+
+def test_visibility_hidden_when_own_tools_arrive_unannotated():
+    # The ChatGPT shape: bare names, display-name server, no hints anywhere.
+    snap = GlimpseSnapshot(
+        tools=[
+            ToolRef(name="introspect_mcp_context", server="MCP Glimpse"),
+            ToolRef(name="submit_feedback", server="MCP Glimpse"),
+            ToolRef(name="share_context_card", server="MCP Glimpse"),
+            ToolRef(name="other", server="Coinbase"),
+        ]
+    )
+    v = analyze(snap, conn(), _OWN).annotation_visibility
+    assert v is not None
+    assert v.verdict == "hidden"
+    assert (v.own_tools_in_snapshot, v.own_tools_declared, v.own_tools_echoed) == (3, 3, 0)
+
+
+def test_visibility_visible_with_namespaced_names():
+    # The Claude shape: mcp__<server>__<tool>.
+    snap = GlimpseSnapshot(
+        tools=[
+            ToolRef(name=f"mcp__claude_ai_MCP_Glimpse__{n}", server="claude_ai_MCP_Glimpse", read_only_hint=True)
+            for n in _OWN
+        ]
+    )
+    v = analyze(snap, conn(), _OWN).annotation_visibility
+    assert v is not None and v.verdict == "visible" and v.own_tools_echoed == 3
+
+
+def test_visibility_partial():
+    snap = GlimpseSnapshot(
+        tools=[
+            ToolRef(name="introspect_mcp_context", read_only_hint=True),
+            ToolRef(name="submit_feedback"),
+        ]
+    )
+    v = analyze(snap, conn(), _OWN).annotation_visibility
+    assert v is not None and v.verdict == "partial"
+    assert (v.own_tools_declared, v.own_tools_echoed) == (2, 1)
+
+
+def test_visibility_ignores_same_named_tool_on_another_server():
+    snap = GlimpseSnapshot(tools=[ToolRef(name="submit_feedback", server="SomeOtherServer")])
+    assert analyze(snap, conn(), _OWN).annotation_visibility is None
+
+
+def test_visibility_requires_separator_bounded_suffix():
+    snap = GlimpseSnapshot(tools=[ToolRef(name="resubmit_feedback")])
+    assert analyze(snap, conn(), _OWN).annotation_visibility is None
+
+
+def test_visibility_absent_without_ground_truth_or_snapshot():
+    snap = GlimpseSnapshot(tools=[ToolRef(name="introspect_mcp_context")])
+    assert analyze(snap, conn()).annotation_visibility is None
+    assert analyze(None, conn(), _OWN).annotation_visibility is None
+
+
+def test_visibility_ignores_namespaced_name_of_another_server_without_server_field():
+    snap = GlimpseSnapshot(tools=[ToolRef(name="mcp__acme_support__submit_feedback")])
+    assert analyze(snap, conn(), _OWN).annotation_visibility is None
+    snap = GlimpseSnapshot(tools=[ToolRef(name="mcp__claude_ai_MCP_Glimpse__submit_feedback")])
+    v = analyze(snap, conn(), _OWN).annotation_visibility
+    assert v is not None and v.verdict == "hidden"

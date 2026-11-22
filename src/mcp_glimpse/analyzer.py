@@ -7,9 +7,11 @@ from __future__ import annotations
 
 import re
 from collections import Counter
+from collections.abc import Mapping
 
 from mcp_glimpse.model import (
     Analysis,
+    AnnotationVisibility,
     ConnectionFacts,
     GlimpseSnapshot,
     LargestServer,
@@ -55,7 +57,79 @@ def _find_inconsistencies(tools: list[ToolRef]) -> list[str]:
     return out
 
 
-def analyze(snapshot: GlimpseSnapshot | None, connection: ConnectionFacts) -> Analysis:
+def _is_own_tool(tool: ToolRef, own_name: str) -> bool:
+    # Hosts namespace tool names differently: bare (ChatGPT), "mcp__<server>__<tool>" (Claude),
+    # "<server>.<tool>" / "<server>/<tool>" (others). Match the exact name or a separator-bounded
+    # suffix — never a bare substring. When the snapshot names the server, it must read as ours,
+    # so another server's generic `submit_feedback` is never mistaken for this one.
+    # With no server field, a namespaced name must carry us in its prefix:
+    # "mcp__acme_support__submit_feedback" is acme's, not ours.
+    if tool.server is not None:
+        if "glimpse" not in tool.server.lower():
+            return False
+        return tool.name == own_name or any(
+            tool.name.endswith(sep + own_name) for sep in ("__", ".", "/", ":")
+        )
+    if tool.name == own_name:
+        return True
+    for sep in ("__", ".", "/", ":"):
+        if tool.name.endswith(sep + own_name):
+            return "glimpse" in tool.name[: -len(sep + own_name)].lower()
+    return False
+
+
+def _annotation_visibility(
+    tools: list[ToolRef], own_annotated: Mapping[str, bool] | None
+) -> AnnotationVisibility | None:
+    """Compare this server's own tools as echoed in the snapshot against what it declared."""
+    if not own_annotated or not tools:
+        return None
+    seen = [
+        (tool, declared)
+        for tool in tools
+        for own, declared in own_annotated.items()
+        if _is_own_tool(tool, own)
+    ]
+    declared = [tool for tool, was_declared in seen if was_declared]
+    if not declared:
+        return None
+    echoed = sum(1 for tool in declared if tool.has_annotations)
+    n = len(declared)
+    if echoed == 0:
+        verdict = "hidden"
+        detail = (
+            f"mcp-glimpse declares annotations on {n} of its own tool{'s' if n != 1 else ''}, but "
+            "they arrived in your snapshot with none. Your host does not show tool annotations to "
+            "the model (or the agent left them out), so the unannotated count reflects what the "
+            "agent can see — not what servers declare."
+        )
+    elif echoed == n:
+        verdict = "visible"
+        detail = (
+            f"All {n} of mcp-glimpse's own annotated tools arrived with their annotations, so "
+            "annotations reach the agent in this host — the coverage figure is meaningful."
+        )
+    else:
+        verdict = "partial"
+        detail = (
+            f"Only {echoed} of mcp-glimpse's {n} annotated tools arrived with annotations — the "
+            "snapshot is incomplete, so treat the coverage figure as a lower bound."
+        )
+    return AnnotationVisibility(
+        own_tools_in_snapshot=len(seen),
+        own_tools_declared=n,
+        own_tools_echoed=echoed,
+        verdict=verdict,
+        detail=detail,
+    )
+
+
+def analyze(
+    snapshot: GlimpseSnapshot | None,
+    connection: ConnectionFacts,
+    own_annotated: Mapping[str, bool] | None = None,
+) -> Analysis:
+    """own_annotated: this server's tool name -> whether it declares annotations (ground truth)."""
     tools = snapshot.tools if snapshot else []
     servers = snapshot.servers if snapshot else []
 
@@ -89,6 +163,7 @@ def analyze(snapshot: GlimpseSnapshot | None, connection: ConnectionFacts) -> An
         dangerous_tool_count=sum(1 for tool in tools if tool.is_dangerous),
         annotated_tool_count=annotated,
         unannotated_tool_count=len(tools) - annotated,
+        annotation_visibility=_annotation_visibility(tools, own_annotated),
         inconsistencies=_find_inconsistencies(tools),
         vantage_gap=VantageGap(
             server_sees=len(connection.server_tools),

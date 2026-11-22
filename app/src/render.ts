@@ -198,8 +198,11 @@ function coveragePanel(r: GlimpseReport): HTMLElement {
     title: tools.filter((t) => !!t.title).length,
   };
   const tally = (label: string, n: number, kind: string) => el("span", { class: `badge badge--${kind}` }, `${label} ${n}`);
+  const hidden = r.analysis.annotationVisibility?.verdict === "hidden";
   const card = panel("Annotation coverage",
-    el("div", {}, el("b", {}, `${annotated} of ${total}`), ` tools declare annotations (${pct}%)`),
+    el("div", {}, el("b", {}, `${annotated} of ${total}`), hidden
+      ? ` tools reached the agent with annotations (${pct}%)`
+      : ` tools declare annotations (${pct}%)`),
     el("div", { class: "cov" }, el("div", { class: "cov__fill", style: `width:${Math.max(2, pct)}%` })),
     el("div", { class: "badges" },
       tally("read-only", counts.read, "read"),
@@ -207,8 +210,16 @@ function coveragePanel(r: GlimpseReport): HTMLElement {
       tally("open-world", counts.open, "open"),
       tally("destructive", counts.destruct, "destruct"),
       tally("titled", counts.title, "title")));
+  // Ground truth from mcp-glimpse's own tools: did declared annotations survive the trip to the
+  // agent? When they didn't, "unannotated" says nothing about what servers actually declare.
+  const vis = r.analysis.annotationVisibility;
+  if (vis) {
+    card.appendChild(el("p", { class: "hint", style: "margin:10px 0 0" },
+      el("b", {}, vis.verdict === "hidden" ? "Host hides annotations. " : vis.verdict === "partial" ? "Partial snapshot. " : "Verified. "),
+      vis.detail));
+  }
   const unannotated = r.analysis.unannotatedToolCount ?? (total - annotated);
-  if (unannotated > 0) {
+  if (unannotated > 0 && !hidden) {
     card.appendChild(el("p", { class: "hint", style: "margin:10px 0 0" },
       `${unannotated} tool${unannotated === 1 ? "" : "s"} declare no annotations — on the wire, the server can't tell a read from a write.`));
   }

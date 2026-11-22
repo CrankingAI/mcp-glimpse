@@ -23,7 +23,7 @@ _MODELS = [
     m.ModelInfo, m.HostInfo, m.ClientCapabilities, m.ServerRef, m.ToolRef,
     m.ContextWindow, m.EnvInfo, m.Persona, m.GlimpseSnapshot,
     m.ConnectionFacts, m.LargestServer, m.VantageGap, m.ServerCost,
-    m.ContextCost, m.PoisoningFinding, m.Analysis, m.GlimpseReport,
+    m.ContextCost, m.PoisoningFinding, m.AnnotationVisibility, m.Analysis, m.GlimpseReport,
 ]
 
 _PRIMITIVES = {str: "string", int: "number", float: "number", bool: "boolean"}
