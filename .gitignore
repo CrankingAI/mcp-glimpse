@@ -21,3 +21,4 @@ app/dist/
 .gstack/
 apps/web/.astro/
 apps/web/dist/
+.wrangler/

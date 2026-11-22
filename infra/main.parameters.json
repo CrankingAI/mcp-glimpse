@@ -16,6 +16,9 @@
     },
     "mcpCustomDomainCertificateName": {
       "value": "mc-cae-glimpse-pr-mcp-mcpglimpse-c-1440"
+    },
+    "edgeWorkerPrincipalId": {
+      "value": "64839dee-a796-454f-9dce-03f1836b8ca6"
     }
   }
 }

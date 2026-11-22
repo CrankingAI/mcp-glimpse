@@ -3,33 +3,36 @@
   "name": "glimpse-edge",
   "main": "src/worker.ts",
   "compatibility_date": "2026-06-01",
-  // Watched paths only, by default. Widening to mcpglimpse.com/* is the
-  // documented opt-in (docs/edge.md — mind free-tier quotas).
+  // Watched paths only, by default. Widening to www.mcpglimpse.com/* is the
+  // documented opt-in (docs/edge.md — mind free-tier quotas). Routes target
+  // www (the canonical host, ADR 0002): the apex is answered by a Cloudflare
+  // redirect rule, which runs BEFORE Workers, so apex routes never fire. mcp is
+  // DNS-only on purpose (ACA managed-cert renewal needs a direct record).
   // Route objects stay one-per-line-expanded so Biome's formatter accepts the
   // file for the configured domain's length (expand: auto preserves them).
   "routes": [
     {
-      "pattern": "mcpglimpse.com/sitemap.xml",
+      "pattern": "www.mcpglimpse.com/sitemap.xml",
       "zone_name": "mcpglimpse.com"
     },
     {
-      "pattern": "mcpglimpse.com/llms.txt",
+      "pattern": "www.mcpglimpse.com/llms.txt",
       "zone_name": "mcpglimpse.com"
     },
     {
-      "pattern": "mcpglimpse.com/llms-full.txt",
+      "pattern": "www.mcpglimpse.com/llms-full.txt",
       "zone_name": "mcpglimpse.com"
     },
     {
-      "pattern": "mcpglimpse.com/robots.txt",
+      "pattern": "www.mcpglimpse.com/robots.txt",
       "zone_name": "mcpglimpse.com"
     },
     {
-      "pattern": "mcpglimpse.com/security.txt",
+      "pattern": "www.mcpglimpse.com/security.txt",
       "zone_name": "mcpglimpse.com"
     },
     {
-      "pattern": "mcpglimpse.com/.well-known/*",
+      "pattern": "www.mcpglimpse.com/.well-known/*",
       "zone_name": "mcpglimpse.com"
     }
   ],
@@ -37,7 +40,7 @@
     { "binding": "EDGE_HITS", "dataset": "edge_hits" }
   ],
   "vars": {
-    "AZURE_ENABLED": "false",
+    "AZURE_ENABLED": "true",
     "POSTHOG_ENABLED": "false",
     "POSTHOG_HOST": "https://us.i.posthog.com"
   }

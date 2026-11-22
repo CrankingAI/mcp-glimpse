@@ -18,8 +18,8 @@ it in Preview) and the seeding/reboot skills read and write.
 | Persistence | storage | [persistence](docs/persistence.md) | Azure Table Storage (managed identity) for `submit_feedback` and share cards; snapshots are never persisted |
 | Auth | none | [auth](docs/auth.md) | public by design in v1 — [ADR 0001](docs/adr/0001-public-by-design-no-auth-v1.md); Descope OAuth2 is a backlog item |
 | Agentic monetization | none | [agentic-commerce](docs/agentic-commerce.md) | free, public tool |
-| Cloud / provider | azure (plus cloudflare) | [deployment](docs/deployment.md) | ACA + Static Web Apps behind a Cloudflare proxied edge |
-| Edge | cloudflare | [edge](docs/edge.md) | proxied edge + logging Worker in front of `www` and `mcp` |
+| Cloud / provider | azure (plus cloudflare) | [deployment](docs/deployment.md) | Static Web Apps behind the Cloudflare proxied edge; ACA direct (DNS-only) |
+| Edge | cloudflare | [edge](docs/edge.md) | proxied edge + logging Worker on `www` watched paths; `mcp` stays DNS-only so its ACA managed cert can renew (the proxy blocks DigiCert) |
 | Environments & naming | ORG=`EffAz` ENV=`prod` PROJECT=`glimpse` region=`eastus` domain=`mcpglimpse.com` | [deployment](docs/deployment.md) | naming scheme; apex → www canonical ([ADR 0002](docs/adr/0002-www-canonical-apex-redirects-to-www.md)) |
 
 ## Backend topology
