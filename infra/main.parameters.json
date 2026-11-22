@@ -10,6 +10,12 @@
     },
     "env": {
       "value": "prod"
+    },
+    "mcpCustomDomain": {
+      "value": "mcp.mcpglimpse.com"
+    },
+    "mcpCustomDomainCertificateName": {
+      "value": "mc-cae-glimpse-pr-mcp-mcpglimpse-c-1440"
     }
   }
 }

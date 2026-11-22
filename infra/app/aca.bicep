@@ -28,6 +28,9 @@ param acrLoginServer string
 @description('Custom domain to bind (empty = default ACA FQDN only). Requires the cert + DNS dance.')
 param customDomain string = ''
 
+@description('Name of the environment managed certificate already issued for customDomain (empty = bootstrap: bind with Auto and let scripts/cf-domain-bind.sh issue it). Once issued, set this so IaC declares the live SniEnabled binding instead of reverting it.')
+param customDomainCertificateName string = ''
+
 var appName = 'app-${project}-${env}'
 var envName = 'cae-${project}-${env}'
 var tableEndpoint = 'https://${storageAccountName}.table.${environment().suffixes.storage}'
@@ -98,11 +101,20 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = {
         stickySessions: {
           affinity: 'sticky'
         }
+        // Steady state = the live binding: SniEnabled + the issued managed cert. 'Auto' is the
+        // bootstrap form only — applying it over a bound domain drops certificateId (what-if,
+        // 2026-11-22), so never deploy it once the cert exists.
         customDomains: empty(customDomain) ? [] : [
-          {
-            name: customDomain
-            bindingType: 'Auto'
-          }
+          empty(customDomainCertificateName)
+            ? {
+                name: customDomain
+                bindingType: 'Auto'
+              }
+            : {
+                name: customDomain
+                bindingType: 'SniEnabled'
+                certificateId: '${acaEnv.id}/managedCertificates/${customDomainCertificateName}'
+              }
         ]
       }
       registries: [

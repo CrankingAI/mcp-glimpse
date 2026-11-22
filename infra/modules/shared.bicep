@@ -73,6 +73,7 @@ module appInsights 'br/public:avm/res/insights/component:0.6.0' = {
     tags: tags
     workspaceResourceId: logAnalytics.outputs.resourceId
     applicationType: 'web'
+    kind: 'web' // the live component's kind; the AVM default '' would clear it on every deploy
     // 90-day retention (F-0007, devp-azure-ops): the AVM module default is 365,
     // which bills per-GB beyond 90 days; live components were set to 90 on
     // 2026-08-10 — this pins the template so a provision can't revert it.

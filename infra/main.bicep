@@ -47,6 +47,9 @@ param containerImage string = ''
 @description('Custom domain for the MCP host (empty = default ACA FQDN only until DNS/cert are set).')
 param mcpCustomDomain string = ''
 
+@description('Managed certificate already issued for mcpCustomDomain (empty during the bootstrap bind).')
+param mcpCustomDomainCertificateName string = ''
+
 @description('Login server of the fleet-shared registry (creffaz, EffAz-Ops). AcrPull for the app MI is granted cross-subscription by devp-azure-ops/infra/container-platform (F-0008, 2026-08-08).')
 param sharedContainerRegistryLoginServer string = 'creffaz.azurecr.io'
 
@@ -101,6 +104,7 @@ module aca 'app/aca.bicep' = if (!empty(containerImage)) {
     appInsightsConnectionString: shared.outputs.appInsightsConnectionString
     acrLoginServer: sharedContainerRegistryLoginServer
     customDomain: mcpCustomDomain
+    customDomainCertificateName: mcpCustomDomainCertificateName
   }
 }
 
