@@ -47,7 +47,15 @@ jobs:
         run: |
           FQDN=$(az containerapp show -g rg-glimpse-prod -n app-glimpse-prod \
             --query properties.configuration.ingress.fqdn -o tsv)
-          for i in $(seq 1 30); do curl -fsS "https://$FQDN/readyz" >/dev/null && break; sleep 5; done
-          got=$(curl -fsS "https://$FQDN/version" | python3 -c 'import sys,json; print(json.load(sys.stdin)["version"])')
+          # Poll until the NEW revision serves: right after `az containerapp update` the old
+          # revision still answers /readyz + /version (single-revision mode swaps on readiness).
+          got=""
+          for _ in $(seq 1 40); do
+            if curl -fsS "https://$FQDN/readyz" >/dev/null 2>&1; then
+              got=$(curl -fsS "https://$FQDN/version" | python3 -c 'import sys,json; print(json.load(sys.stdin)["version"])' || true)
+              [ "$got" = "$VERSION" ] && break
+            fi
+            sleep 5
+          done
           echo "deployed /version = $got (expected $VERSION)"
           test "$got" = "$VERSION"

@@ -256,6 +256,8 @@ def configure() -> bool:
     # The exporter's own HTTP calls (and Table Storage's) log every request/response header block
     # at INFO through azure-core — it would drown the console log. Keep their warnings and errors.
     logging.getLogger("azure.core.pipeline.policies.http_logging_policy").setLevel(logging.WARNING)
+    # ...and the exporter logs "Transmission succeeded" at INFO on every batch.
+    logging.getLogger("azure.monitor.opentelemetry.exporter").setLevel(logging.WARNING)
     try:
         configure_azure_monitor(
             logger_name="mcp_glimpse",
