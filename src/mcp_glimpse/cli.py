@@ -8,6 +8,8 @@ from __future__ import annotations
 import argparse
 import logging
 import os
+import signal
+import sys
 
 from .server import build_server
 
@@ -25,17 +27,42 @@ def main() -> None:
         level=os.environ.get("LOG_LEVEL", "INFO"),
         format="%(asctime)s %(levelname)s %(name)s %(message)s",
     )
-    mcp = build_server()
     if args.http:
-        mcp.settings.host = os.environ.get("HOST", "0.0.0.0")
-        mcp.settings.port = args.port or int(os.environ.get("PORT", "8000"))
-        logging.getLogger("mcp_glimpse").info(
-            "mcp-glimpse HTTP on http://%s:%s%s",
-            mcp.settings.host, mcp.settings.port, mcp.settings.streamable_http_path,
-        )
-        mcp.run(transport="streamable-http")
+        run_http(args.port)
     else:
-        mcp.run(transport="stdio")
+        build_server().run(transport="stdio")
+
+
+def run_http(port: int | None) -> None:
+    # Mirrors FastMCP.run_streamable_http_async, plus the telemetry wrap (docs/observability.md).
+    import uvicorn
+
+    from . import telemetry
+
+    tracing = telemetry.configure()  # before build_server so its loggers export from the start
+    mcp = build_server()
+    mcp.settings.host = os.environ.get("HOST", "0.0.0.0")
+    mcp.settings.port = port or int(os.environ.get("PORT", "8000"))
+    app = telemetry.wrap(mcp.streamable_http_app(), tracing=tracing)
+    config = uvicorn.Config(
+        app,
+        host=mcp.settings.host,
+        port=mcp.settings.port,
+        log_level=mcp.settings.log_level.lower(),
+        # Never derive the logged client address from X-Forwarded-For: console logs are retained,
+        # and raw caller IPs belong only in the 10-day edge log (docs/edge.md).
+        proxy_headers=False,
+    )
+    telemetry.harden_logging()
+    # uvicorn re-raises SIGTERM with the ORIGINAL handler after its graceful shutdown. With the
+    # default handler the process dies without atexit, so OTel's batch processors never flush the
+    # last few seconds (every revision roll / scale-to-zero). SystemExit runs atexit -> flush.
+    signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
+    logging.getLogger("mcp_glimpse").info(
+        "mcp-glimpse HTTP on http://%s:%s%s",
+        mcp.settings.host, mcp.settings.port, mcp.settings.streamable_http_path,
+    )
+    uvicorn.Server(config).run()
 
 
 if __name__ == "__main__":

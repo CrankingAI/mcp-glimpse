@@ -48,16 +48,30 @@ resource acaEnv 'Microsoft.App/managedEnvironments@2024-03-01' = {
   location: location
   tags: tags
   properties: {
+    // 'azure-monitor' (routed by the diagnostic setting below), NOT 'log-analytics': the latter
+    // writes with the workspace shared key, and the workspace has local auth disabled — so every
+    // console line was silently rejected (zero rows, Aug–Nov 2026). Diagnostic settings need no key.
     appLogsConfiguration: {
-      destination: 'log-analytics'
-      logAnalyticsConfiguration: {
-        customerId: law.properties.customerId
-        sharedKey: law.listKeys().primarySharedKey
-      }
+      destination: 'azure-monitor'
     }
     // A non-VNet managed environment is publicly reachable by default (the AVM wrapper is what
     // defaults publicNetworkAccess to Disabled). The real boundary is the Cloudflare edge + the
     // app rate limiter; per-app ingress.external controls exposure.
+  }
+}
+
+// Console + system logs -> the shared workspace (resource-specific ContainerApp* tables).
+// ContainerAppHTTPLogs is deliberately OFF: ingress access logs carry the raw client IP + UA, and
+// this workspace retains 30 days — raw IP/UA may live only in the 10-day edge log (docs/edge.md).
+resource acaEnvLogs 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
+  name: 'logs-to-${law.name}'
+  scope: acaEnv
+  properties: {
+    workspaceId: law.id
+    logs: [
+      { category: 'ContainerAppConsoleLogs', enabled: true }
+      { category: 'ContainerAppSystemLogs', enabled: true }
+    ]
   }
 }
 
@@ -120,6 +134,10 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = {
             { name: 'GLIMPSE_TABLE_URI', value: tableEndpoint }
             { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', value: appInsightsConnectionString }
           ]
+          // Scale-to-zero (F-0009) means every idle wake is a cold start, and ingress holds
+          // requests until Readiness passes — so readiness polls fast. A 20s period cost up to
+          // 20s per cold start (2026-11-22: queued requests hit ClientDisconnect waiting for it).
+          // Liveness stays slow; it only needs to catch a wedged process.
           probes: [
             {
               type: 'Liveness'
@@ -130,9 +148,12 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = {
             {
               type: 'Readiness'
               httpGet: { path: '/readyz', port: 8080 }
-              initialDelaySeconds: 8
-              periodSeconds: 20
-              failureThreshold: 6
+              initialDelaySeconds: 1
+              periodSeconds: 2
+              timeoutSeconds: 2
+              // 10 x 2s = 20s before pulling the only replica: Table Storage calls are sync on the
+              // event loop and may stall a few seconds; that must not 503 the whole service.
+              failureThreshold: 10
             }
           ]
         }

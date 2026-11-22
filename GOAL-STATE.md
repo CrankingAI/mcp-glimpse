@@ -53,5 +53,6 @@ Health `/livez`+`/readyz`, `/version` from `VERSION`, OTel → App Insights, RFC
 Problem Details, feature flags (default off). The cross-cutting contract every host
 honors. Additionally binding for the MCP surface: stateful Streamable HTTP; camelCase
 wire contract (`by_alias` + `exclude_none`) with a contract-snapshot CI gate;
-tool/parameter names are append-only; `MCP_ALLOWED_HOSTS` set; `minReplicas ≥ 1`,
-single replica.
+tool/parameter names are append-only; `MCP_ALLOWED_HOSTS` set; `minReplicas 0`
+(scale-to-zero, estate decision F-0009 — cold start accepted, kept short by a fast
+readiness probe), single replica.

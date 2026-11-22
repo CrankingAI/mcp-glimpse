@@ -66,13 +66,18 @@ Every tool declares full annotations (`readOnlyHint` / `destructiveHint` / `idem
   urges, invisible/bidi Unicode, cross-server shadowing, and suspiciously long descriptions.
 - **Consistency lens** — flags tools that declare `readOnlyHint` but read like a write.
 - **Vantage gap** — how few tools this server sees vs. how many the agent sees.
+- **Annotation visibility** — mcp-glimpse knows what it declared on its own tools, so it checks
+  whether those annotations survived into your snapshot. If they didn't, your host hides
+  annotations from the model, and "unannotated" counts say nothing about what servers declare.
 
 ## Privacy
 
 Snapshots are analyzed **in memory and never persisted, logged, or sent anywhere.** Only an explicit
 `submit_feedback` or `share_context_card` call writes anything, and the card stores aggregate counts
 only — never tool names or descriptions. The server is public by design; the "This Connection" tab shows
-exactly what a server can and cannot know about you.
+exactly what a server can and cannot know about you. The hosted server sends operational telemetry
+(request status and timing, country/city, client product name) to Azure Monitor; IP addresses are
+used only for that geo lookup and are masked, never stored.
 
 ## Development
 

@@ -29,8 +29,11 @@ COPY --from=view /view/dist/ ./app/dist/
 
 # Pre-cache the tiktoken o200k_base vocab so context-cost never needs network at runtime.
 ENV TIKTOKEN_CACHE_DIR=/srv/.tiktoken
-RUN mkdir -p /srv/.tiktoken && uv run python -c "import tiktoken; tiktoken.get_encoding('o200k_base')"
+# Put the synced venv first on PATH so the runtime never invokes `uv run` (which re-syncs —
+# rebuilds the project + recompiles ~1.5k files of bytecode — on every cold start).
+ENV PATH="/srv/.venv/bin:$PATH"
+RUN mkdir -p /srv/.tiktoken && python -c "import tiktoken; tiktoken.get_encoding('o200k_base')"
 
 ENV HOST=0.0.0.0 PORT=8080 LOG_LEVEL=INFO
 EXPOSE 8080
-CMD ["uv", "run", "mcp-glimpse", "--http"]
+CMD ["mcp-glimpse", "--http"]
